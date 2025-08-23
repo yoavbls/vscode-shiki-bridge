@@ -1,20 +1,23 @@
-import type { LanguageInput, LanguageRegistration } from "shiki/types";
-import { getVscode } from "./vscode-utils";
 import { parse } from "jsonc-parser";
 import type { IRawGrammar } from "shiki/textmate";
+import type { LanguageRegistration } from "shiki/types";
 import { inferBuiltinLanguageIds } from "./user-language-inference";
+import { getVscode } from "./vscode-utils";
 
 /**
  * Collect TextMate grammars contributed by installed VS Code extensions.
- * - Returns an empty array when not running inside VS Code or on failure.
- * - Only JSON-based grammars are collected ("*.json").
+ * @param langIds - If provided, only loads grammars for those specific language IDs.
  */
-async function getUserExtensionLangs() {
+export async function getUserLangs(langIds?: string[]) {
   try {
     const vscode = getVscode();
 
     const decoder = new TextDecoder("utf-8");
-    const results: LanguageRegistration[] = [];
+    const extensionLangs: LanguageRegistration[] = [];
+    const seenScope = new Set<string>();
+
+    // Normalize langIds to lowercase for comparison
+    const normalizedLangIds = langIds?.map((id) => id.toLowerCase());
 
     for (const extension of vscode.extensions.all) {
       const contributes = (extension.packageJSON?.contributes ?? {}) as {
@@ -31,9 +34,33 @@ async function getUserExtensionLangs() {
         continue;
       }
 
+      // Build language ID to aliases map
       const languageIdToAliases = new Map<string, string[]>();
       for (const lang of contributes.languages ?? []) {
         if (lang?.id) languageIdToAliases.set(lang.id, lang.aliases ?? []);
+      }
+
+      // If langIds specified, check if this extension has any matching grammars
+      if (normalizedLangIds) {
+        const hasMatchingGrammar = contributes.grammars.some((grammar) => {
+          if (!grammar?.language) return false;
+
+          const names = [
+            grammar.language,
+            ...(languageIdToAliases.get(grammar.language) ?? []),
+          ]
+            .filter(Boolean)
+            .map((name) => name.toLowerCase());
+
+          return normalizedLangIds.some((desiredName) =>
+            names.includes(desiredName)
+          );
+        });
+
+        // Skip this extension entirely if no matching grammars
+        if (!hasMatchingGrammar) {
+          continue;
+        }
       }
 
       for (const grammar of contributes.grammars) {
@@ -43,6 +70,26 @@ async function getUserExtensionLangs() {
 
         // Prefer grammars that are tied to a language id
         if (!grammar.language) continue;
+
+        // Skip if we've already seen this scope
+        if (seenScope.has(grammar.scopeName)) continue;
+
+        // If langIds specified, check if this grammar matches
+        if (normalizedLangIds) {
+          const names = [
+            grammar.language,
+            ...(languageIdToAliases.get(grammar.language) ?? []),
+          ]
+            .filter(Boolean)
+            .map((name) => name.toLowerCase());
+
+          const match = normalizedLangIds.find((desiredName) =>
+            names.includes(desiredName)
+          );
+          if (!match) {
+            continue;
+          }
+        }
 
         try {
           const uri = vscode.Uri.joinPath(extension.extensionUri, grammar.path);
@@ -58,7 +105,8 @@ async function getUserExtensionLangs() {
               )
             : undefined;
 
-          results.push({
+          seenScope.add(grammar.scopeName);
+          extensionLangs.push({
             ...grammarJson,
             name: grammar.language,
             embeddedLangs,
@@ -71,34 +119,14 @@ async function getUserExtensionLangs() {
       }
     }
 
-    return results;
+    // If langIds specified, also include inferred built-in languages
+    if (normalizedLangIds) {
+      const builtinLangs = inferBuiltinLanguageIds(extensionLangs);
+      return [...extensionLangs, ...builtinLangs];
+    }
+
+    return extensionLangs;
   } catch {
     return [];
   }
-}
-
-export async function getSpecificUserLangs(langIds: string[]) {
-  const userExtensionLangs = await getUserExtensionLangs();
-  const langs: LanguageInput = [];
-  const seenScope = new Set<string>();
-
-  for (const grammer of userExtensionLangs) {
-    if (!grammer.scopeName || seenScope.has(grammer.scopeName)) {
-      continue;
-    }
-    const names = [grammer.name, ...(grammer.aliases ?? [])]
-      .filter(Boolean)
-      .map((name) => name.toLowerCase());
-
-    const match = langIds.find((desiredName) => names.includes(desiredName));
-    if (!match) {
-      continue;
-    }
-    seenScope.add(grammer.scopeName);
-    // Register only the canonical id and grammar to prevent alias loops and cascades
-    langs.push(grammer);
-  }
-
-  const builtinLangs = inferBuiltinLanguageIds(langs);
-  return [...langs, ...builtinLangs];
 }
