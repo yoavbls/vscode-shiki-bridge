@@ -1,21 +1,26 @@
 {
   "compilerOptions": {
-    "target": "esnext",
-    "lib": ["es2023"],
-    "moduleDetection": "force",
-    "module": "preserve",
-    "moduleResolution": "bundler",
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
     "resolveJsonModule": true,
-    "types": ["node"],
     "strict": true,
-    "noUnusedLocals": true,
-    "declaration": true,
-    "emitDeclarationOnly": true,
-    "esModuleInterop": true,
-    "isolatedModules": true,
-    "verbatimModuleSyntax": true,
     "skipLibCheck": true,
-    
+    "esModuleInterop": true,
+    "declaration": true,
+    "sourceMap": true,
+    "noUnusedLocals": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "isolatedModules": true,
+    "types": ["node"],
+    "emitDeclarationOnly": true,
+    "verbatimModuleSyntax": true,
+    "baseUrl": ".",
+    "paths": {
+      "vscode-shiki-bridge": ["./src/index.ts"],
+    }
   },
-  "include": ["src"]
+  "include": ["src", "tests", "vitest.config.ts"]
 }

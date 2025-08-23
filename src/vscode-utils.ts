@@ -1,6 +1,5 @@
 export function getVscode(): typeof import("vscode") {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
     return require("vscode");
   } catch {
     throw new Error(

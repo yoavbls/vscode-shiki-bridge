@@ -1,4 +1,5 @@
 const esbuild = require("esbuild");
+const path = require("path");
 
 const production = process.argv.includes("--production");
 const watch = process.argv.includes("--watch");
@@ -25,6 +26,20 @@ const esbuildProblemMatcherPlugin = {
   },
 };
 
+/**
+ * @type {import('esbuild').Plugin}
+ */
+const aliasPlugin = {
+  name: "alias-plugin",
+  setup(build) {
+    build.onResolve({ filter: /^vscode-shiki-bridge$/ }, () => {
+      return {
+        path: path.resolve(__dirname, "../../src/index.ts"),
+      };
+    });
+  },
+};
+
 async function main() {
   const ctx = await esbuild.context({
     entryPoints: ["src/extension.ts"],
@@ -37,7 +52,7 @@ async function main() {
     outfile: "dist/extension.cjs",
     external: ["vscode", "jsonc-parser"],
     logLevel: "silent",
-    plugins: [esbuildProblemMatcherPlugin],
+    plugins: [aliasPlugin, esbuildProblemMatcherPlugin],
   });
   if (watch) {
     await ctx.watch();

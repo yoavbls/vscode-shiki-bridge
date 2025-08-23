@@ -1,7 +1,7 @@
 {
   "name": "vscode-shiki-bridge",
   "version": "0.0.0",
-  "description": "Embed Shiki code blocks in VS Code, inheriting the user’s themes and languages",
+  "description": "Embed Shiki code blocks in VS Code, inheriting the user's themes and languages",
   "type": "module",
   "license": "MIT",
   "homepage": "https://github.com/yoavbls/vscode-shiki-bridge#readme",
@@ -23,7 +23,10 @@
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
-    ".": "./dist/index.js",
+    ".": {
+      "development": "./src/index.ts",
+      "default": "./dist/index.js"
+    },
     "./package.json": "./package.json"
   },
   "publishConfig": {
@@ -33,16 +36,23 @@
     "build": "tsdown",
     "dev": "tsdown --watch",
     "test": "vitest",
+    "test:ui": "vitest --ui",
+    "ci": "npm run typecheck && npm run lint && npm test -- --run",
     "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
     "release": "bumpp && npm publish",
     "prepare": "tsdown"
   },
   "devDependencies": {
     "@types/node": "^22.15.17",
+    "@typescript-eslint/eslint-plugin": "^8.39.0",
+    "@typescript-eslint/parser": "^8.39.0",
+    "@vitest/ui": "^3.2.4",
     "bumpp": "^10.1.0",
+    "eslint": "^9.32.0",
     "tsdown": "^0.11.9",
     "typescript": "^5.8.3",
-    "vitest": "^3.1.3"
+    "vitest": "^3.2.4"
   },
   "peerDependencies": {
     "@types/vscode": "^1.102.0",

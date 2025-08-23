@@ -1,8 +1,8 @@
 import { parse } from "jsonc-parser";
 import type { IRawGrammar } from "shiki/textmate";
 import type { LanguageRegistration } from "shiki/types";
-import { inferBuiltinLanguageIds } from "./user-language-inference";
-import { getVscode } from "./vscode-utils";
+import { inferBuiltinLanguageIds } from "./user-language-inference.js";
+import { getVscode } from "./vscode-utils.js";
 
 /**
  * Collect TextMate grammars contributed by installed VS Code extensions.

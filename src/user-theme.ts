@@ -1,5 +1,5 @@
 import { parse } from "jsonc-parser";
-import { getVscode } from "./vscode-utils";
+import { getVscode } from "./vscode-utils.js";
 import type { SpecialTheme, ThemeRegistrationAny } from "shiki/types";
 
 /**
