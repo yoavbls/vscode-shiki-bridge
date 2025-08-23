@@ -3,10 +3,7 @@
 import type { LanguageInput, ThemeRegistrationAny } from "shiki";
 import { createHighlighter } from "shiki";
 import * as vscode from "vscode";
-import {
-  getUserExtensionLanguageGrammars,
-  getUserTheme,
-} from "vscode-shiki-bridge";
+import { getSpecificUserLangs, getUserTheme } from "vscode-shiki-bridge";
 
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
@@ -24,58 +21,34 @@ export function activate(context: vscode.ExtensionContext) {
     "vscode-shiki-bridge-example-extension.shikiPreview",
     async () => {
       // Resolve current VS Code theme JSON (may be null if unavailable)
-      const themeJson = (await getUserTheme()) as ThemeRegistrationAny;
-      const themes = [themeJson ?? "none"];
+      const [theme, themes] = await getUserTheme();
+      const langs = await getSpecificUserLangs(["graphql", "type"]);
 
-      // Discover extension-provided grammars
-      const grammars = await getUserExtensionLanguageGrammars();
-
-      // Select only specific extension-contributed languages to avoid pulling bundled deps
-      const desired = new Set(["graphql", "type"]);
-      const langs: LanguageInput = [];
-      const seenScope = new Set<string>();
-      for (const grammer of grammars) {
-        if (!grammer.scopeName || seenScope.has(grammer.scopeName)) {
-          continue;
-        }
-        const names = [grammer.name, ...(grammer.aliases ?? [])]
-          .filter(Boolean)
-          .map((name) => name.toLowerCase());
-
-        const match = Array.from(desired).find((desiredName) =>
-          names.includes(desiredName)
-        );
-        if (!match) {
-          continue;
-        }
-        seenScope.add(grammer.scopeName);
-        // Register only the canonical id and grammar to prevent alias loops and cascades
-        langs.push(grammer);
-      }
-
-      // Create highlighter in a single call
-      const highlighter = await createHighlighter({ themes, langs });
-
-      // Render a sample code block with Shiki using the user's theme when available
-      const codeSample = `string | number | Partial<{ a: string }>[]`;
-
-      // Render sample as plain text; we only loaded selected extension langs
-      const htmlSnippet = highlighter.codeToHtml(codeSample, {
-        lang: "type",
-        theme: themeJson ?? "github-dark",
+      const highlighter = await createHighlighter({
+        themes,
+        langs,
       });
 
-      const gqlCodeSample = `# GraphQL
+      const htmlSnippet = highlighter.codeToHtml(
+        `string | number | Partial<{ a: string }>[]`,
+        {
+          lang: "type",
+          theme,
+        }
+      );
+
+      const gqlHtmlSnippet = highlighter.codeToHtml(
+        `# GraphQL
       query {
         user {
           name
         }
-      }`;
-
-      const gqlHtmlSnippet = highlighter.codeToHtml(gqlCodeSample, {
-        lang: "graphql",
-        theme: themeJson ?? "dark-plus",
-      });
+      }`,
+        {
+          lang: "graphql",
+          theme,
+        }
+      );
 
       const panel = vscode.window.createWebviewPanel(
         "vscodeShikiBridgeExample",
