@@ -1,6 +1,6 @@
 {
   "name": "vscode-shiki-bridge",
-  "version": "0.0.2",
+  "version": "0.0.1",
   "description": "Embed Shiki code blocks in VS Code, inheriting the user's themes and languages",
   "type": "module",
   "license": "MIT",
