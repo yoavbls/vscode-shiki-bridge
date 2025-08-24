@@ -1,6 +1,6 @@
 {
   "name": "vscode-shiki-bridge",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "Embed Shiki code blocks in VS Code, inheriting the user's themes and languages",
   "type": "module",
   "license": "MIT",
@@ -13,7 +13,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/author/library.git"
+    "url": "git+https://github.com/yoavbls/vscode-shiki-bridge.git"
   },
   "author": "Yoav Balasiano <yoavbls@gmail.com>",
   "files": [
