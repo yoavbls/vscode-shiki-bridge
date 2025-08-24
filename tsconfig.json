@@ -19,8 +19,9 @@
     "verbatimModuleSyntax": true,
     "baseUrl": ".",
     "paths": {
-      "vscode-shiki-bridge": ["./src/index.ts"],
+      "vscode-shiki-bridge": ["./src/index.ts"]
     }
   },
-  "include": ["src", "tests", "vitest.config.ts"]
+  "include": ["src", "example"],
+  "exclude": ["node_modules", "dist", "**/*.cjs", "**/*.mjs", "**/out/**"]
 }
