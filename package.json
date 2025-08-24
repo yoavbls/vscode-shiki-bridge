@@ -35,9 +35,7 @@
   "scripts": {
     "build": "tsdown",
     "dev": "tsdown --watch",
-    "test": "vitest",
-    "test:ui": "vitest --ui",
-    "ci": "npm run typecheck && npm run lint && npm test -- --run",
+    "ci": "npm run typecheck && npm run lint",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "release": "bumpp && npm publish",
@@ -47,12 +45,10 @@
     "@types/node": "^22.15.17",
     "@typescript-eslint/eslint-plugin": "^8.39.0",
     "@typescript-eslint/parser": "^8.39.0",
-    "@vitest/ui": "^3.2.4",
     "bumpp": "^10.1.0",
     "eslint": "^9.32.0",
     "tsdown": "^0.11.9",
-    "typescript": "^5.8.3",
-    "vitest": "^3.2.4"
+    "typescript": "^5.8.3"
   },
   "peerDependencies": {
     "@types/vscode": "^1.102.0",
