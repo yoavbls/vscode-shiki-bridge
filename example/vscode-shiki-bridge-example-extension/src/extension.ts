@@ -37,12 +37,10 @@ export function activate(context: vscode.ExtensionContext) {
       );
 
       const gqlHtmlSnippet = highlighter.codeToHtml(
-        `# GraphQL
-      query {
-        user {
-          name
-        }
-      }`,
+        `type User {
+    name: String
+    age: Int
+}`,
         {
           lang: "graphql",
           theme,
@@ -63,20 +61,32 @@ export function activate(context: vscode.ExtensionContext) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Shiki Preview</title>
     <style>
-      html, body { margin: 0; padding: 0; background: transparent; font-family: ui-sans-serif, system-ui, sans-serif; }
-      .container { padding: 16px; }
-      pre { margin: 0; border-radius: 8px; overflow: auto; }
+      body { 
+        font-family: system-ui, -apple-system, sans-serif;
+        padding: 20px;
+        margin: 0;
+      }
+      h3 {
+        margin: 10px 0;
+      }
+      pre.shiki code {
+        padding: 8px;
+        display: block;
+        border-radius: 8px;
+        line-height: 1;
+      }
+      pre.shiki .line {
+        display: block;
+      }
     </style>
   </head>
-    <body>
+  <body>
       <div class="container">${htmlSnippet}</div>
-      ${
-        gqlHtmlSnippet
-          ? `GQL:<div class="container">${gqlHtmlSnippet}</div>`
-          : ""
-      }
-    </body>
-  </html>`;
+    ${
+      gqlHtmlSnippet ? `GQL:<div class="container">${gqlHtmlSnippet}</div>` : ""
+    }
+  </body>
+</html>`;
     }
   );
 

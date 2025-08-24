@@ -36,6 +36,10 @@ const html = highlighter.codeToHtml(
 );
 ```
 
+#### Results
+
+![VS Code Shiki Bridge Example](images/vscode-shiki-bridge.png)
+
 ## Development and Debug
 
 1. Open the project in VS Code / Cursor
