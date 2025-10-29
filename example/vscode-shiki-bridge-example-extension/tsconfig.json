@@ -5,5 +5,6 @@
     "types": ["node"],
     "emitDeclarationOnly": false
   },
-  "include": ["src/**/*"]
+  "include": ["src/**/*"],
+  "exclude": ["examples/**/*"]
 }

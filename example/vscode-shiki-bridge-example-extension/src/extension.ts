@@ -1,13 +1,25 @@
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
-import { createHighlighter } from "shiki";
+import { createHighlighterCore } from "shiki/core";
+import { createOnigurumaEngine } from 'shiki/engine/oniguruma';
 import * as vscode from "vscode";
 import { getUserLangs, getUserTheme } from "vscode-shiki-bridge";
+
+let highlighter: ReturnType<typeof createHighlighterCore> | null = null;
+
+async function getHighlighter(): NonNullable<typeof highlighter> {
+  if (highlighter === null) {
+    highlighter = createHighlighterCore({
+      engine: createOnigurumaEngine(import('shiki/wasm')),
+    });
+  }
+  return highlighter;
+}
 
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
 export function activate(context: vscode.ExtensionContext) {
-  // Use the console to output diagnostic information (console.log) and errors (console.error)
+  // Use the console to output diagnostic information (console.log) and errors (console.error) during debugging
   // This line of code will only be executed once when your extension is activated
   console.log(
     'Congratulations, your extension "vscode-shiki-bridge-example-extension" is now active!'
@@ -21,14 +33,34 @@ export function activate(context: vscode.ExtensionContext) {
     async () => {
       // Resolve current VS Code theme JSON (may be null if unavailable)
       const [theme, themes] = await getUserTheme();
-      const langs = await getUserLangs(["graphql", "type"]);
+      const langs = await getUserLangs(['typescript', 'type']);
 
-      const highlighter = await createHighlighter({
-        themes,
-        langs,
+      console.log({ theme, themes, langs });
+
+      // NOTE: it is recommended to cache this instance and dynammically load themes and languages
+      // see: https://shiki.style/guide/bundles#fine-grained-bundle
+      const highlighter = await getHighlighter();
+
+      // dynamically load themes that are not loaded yet
+      const loadedThemes = highlighter.getLoadedThemes();
+      const unloadedThemes = themes.filter(theme => {
+        if (!theme.name) {
+          return false;
+        }
+        return !loadedThemes.includes(theme.name);
       });
+      if (unloadedThemes.length > 0) {
+        await highlighter.loadTheme(...unloadedThemes);
+      }
 
-      const htmlSnippet = highlighter.codeToHtml(
+      // dynamically load languages that are not loaded yet
+      const loadedLanguages = highlighter.getLoadedLanguages();
+      const unloadedLanguages = langs.filter(lang => !loadedLanguages.includes(lang.name));
+      if (unloadedLanguages.length > 0) {
+        await highlighter.loadLanguage(...unloadedLanguages);
+      }
+
+      const typeSnippet = highlighter.codeToHtml(
         `string | number | Partial<{ a: string }>[]`,
         {
           lang: "type",
@@ -36,16 +68,33 @@ export function activate(context: vscode.ExtensionContext) {
         }
       );
 
-      const gqlHtmlSnippet = highlighter.codeToHtml(
-        `type User {
-    name: String
-    age: Int
+      const typescriptSnippet = highlighter.codeToHtml(`
+type User = {
+    name: string,
+    age: number,
+};
+
+const thing: User = {
+    name: 'Jane Doe',
+    age: 23,
 }`,
         {
-          lang: "graphql",
+          lang: "typescript",
           theme,
         }
       );
+
+      const javascriptSnippet = highlighter.codeToHtml(`
+/**
+ * @param {number} delay
+ */
+async function wait(delay) {
+  return Promise(resolve => setTimeout(resolve, delay));
+}
+        `, {
+          lang: 'typescript',
+          theme,
+        });
 
       const panel = vscode.window.createWebviewPanel(
         "vscodeShikiBridgeExample",
@@ -61,7 +110,7 @@ export function activate(context: vscode.ExtensionContext) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Shiki Preview</title>
     <style>
-      body { 
+      body {
         font-family: system-ui, -apple-system, sans-serif;
         padding: 20px;
         margin: 0;
@@ -81,10 +130,18 @@ export function activate(context: vscode.ExtensionContext) {
     </style>
   </head>
   <body>
-      <div class="container">${htmlSnippet}</div>
-    ${
-      gqlHtmlSnippet ? `GQL:<div class="container">${gqlHtmlSnippet}</div>` : ""
-    }
+      <div class="container">
+        <h2><pre><code>type</code><pre></h2>
+        ${typeSnippet}
+      </div>
+      <div class="container">
+        <h2><pre><code>typescript</code><pre></h2>
+        ${typescriptSnippet}
+      </div>
+      <div class="container">
+        <h2><pre><code>javascript</code><pre></h2>
+        ${javascriptSnippet}
+      </div>
   </body>
 </html>`;
     }

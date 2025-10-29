@@ -15,7 +15,8 @@
     "commands": [
       {
         "command": "vscode-shiki-bridge-example-extension.shikiPreview",
-        "title": "Shiki Preview"
+        "title": "Shiki Preview",
+        "category": "VSCode Shiki bridge"
       }
     ]
   },
