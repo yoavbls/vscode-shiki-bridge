@@ -2,6 +2,7 @@ import { parse } from "jsonc-parser";
 import { getVscode } from "./vscode-utils.js";
 import type { SpecialTheme, ThemeRegistration } from "shiki/types";
 import type { ExtensionManifest, ExtensionTheme } from "vscode-extension-manifest";
+import { logger } from "./logger.js";
 
 type TokenColor = { name: string, scope: string | string[], settings: { foreground: string, background: string, fontStyle: string } };
 
@@ -90,7 +91,7 @@ export async function getUserTheme(): Promise<
       const json = parse(jsonText) as VSCodeTheme;
       // TODO: resolve token colors
       if (typeof json.tokenColors === 'string') {
-        console.warn('tokenColors as a relative tmTheme file is not supported', themeUri.toString(), json.tokenColors);
+        logger.warn('tokenColors as a relative tmTheme file is not supported', themeUri.toString(), json.tokenColors);
         json.tokenColors = [];
       }
       return json;

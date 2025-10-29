@@ -9,30 +9,30 @@
 			"name": "Run Extension",
 			"type": "extensionHost",
 			"request": "launch",
+			"preLaunchTask": "npm: compile",
+			"cwd": "${workspaceFolder}/example/vscode-shiki-bridge-example-extension",
 			"args": [
-				"--extensionDevelopmentPath=${workspaceFolder}/example/vscode-shiki-bridge-example-extension",
+				"--extensionDevelopmentPath=${workspaceFolder}/example/vscode-shiki-bridge-advanced-example-extension",
 				"${workspaceFolder}/example/vscode-shiki-bridge-example-extension/examples"
 			],
 			"outFiles": [
 				"${workspaceFolder}/example/vscode-shiki-bridge-example-extension/dist/**/*.cjs"
-			],
-			"cwd": "${workspaceFolder}/example/vscode-shiki-bridge-example-extension",
-			"preLaunchTask": "npm: compile"
+			]
 		},
 		{
 			"name": "Run Extension (all extensions disabled)",
 			"type": "extensionHost",
 			"request": "launch",
+			"preLaunchTask": "npm: compile",
+			"cwd": "${workspaceFolder}/example/vscode-shiki-bridge-example-extension",
 			"args": [
                 "--disable-extensions",
-				"--extensionDevelopmentPath=${workspaceFolder}/example/vscode-shiki-bridge-example-extension",
+				"--extensionDevelopmentPath=${workspaceFolder}/example/vscode-shiki-bridge-advanced-example-extension",
 				"${workspaceFolder}/example/vscode-shiki-bridge-example-extension/examples"
 			],
 			"outFiles": [
 				"${workspaceFolder}/example/vscode-shiki-bridge-example-extension/dist/**/*.cjs"
-			],
-			"cwd": "${workspaceFolder}/example/vscode-shiki-bridge-example-extension",
-			"preLaunchTask": "npm: compile"
+			]
 		}
 	]
 }

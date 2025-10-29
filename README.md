@@ -49,4 +49,4 @@ const html = highlighter.codeToHtml(
 
 ## License
 
-MIT
+[MIT](./LICENSE)
