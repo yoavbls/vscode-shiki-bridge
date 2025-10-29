@@ -17,7 +17,12 @@
       {
         "command": "vscode-shiki-bridge-example-extension.shikiPreview",
         "title": "Shiki Preview",
-        "category": "VSCode Shiki bridge"
+        "category": "VS Code Shiki Bridge"
+      },
+      {
+        "command": "vscode-shiki-bridge-example.extension.inspectInternals",
+        "title": "Inspect Internals",
+        "category": "VS Code Shiki Bridge"
       }
     ]
   },

@@ -6,6 +6,7 @@ import type { ExtensionGrammer as ExtensionGrammar, ExtensionLanguage } from "vs
 import type { Registry } from "./registry.js";
 import type { ExtensionFileReader } from "./vscode-utils.js";
 import { logger } from './logger.js';
+import { parse } from "jsonc-parser";
 
 /**
  * The {@link LanguageConfiguration} type from vscode is incomplete, so we augment it with our own addition
@@ -25,30 +26,36 @@ export interface LanguageConfigurationFoldingMarkers {
   };
 }
 
-function hasConfiguration(language: ExtensionLanguage): language is { configuration: string } {
+function hasConfiguration(language: ExtensionLanguage): language is ExtensionLanguage & { configuration: string } {
   return !!language.configuration;
 }
 
 export class LanguageRegistrationCollectionBuilder {
-  private constructor(private readonly registry: Registry, private readonly fileReader: ExtensionFileReader) {}
+  constructor(readonly registry: Registry, readonly fileReader: ExtensionFileReader) {}
 
-
-  private async getLanguageConfigurationFiles(languages: ExtensionLanguage[]) {
-    return await Promise.all(languages
+  async getLanguageConfigurationFiles(languages: ExtensionLanguage[]): Promise<Map<ExtensionLanguage, LanguageConfigurationFull>> {
+    const entries = await Promise.all(languages
       .filter(hasConfiguration)
       .map(async language => {
         const uri = this.registry.getUri(language);
         const configuration = await this.fileReader.readJson<LanguageConfigurationFull>(uri, language.configuration);
-        return configuration;
+        return [language, configuration] as const;
       }));
+    return new Map(entries);
   }
 
-  private async getGrammarFiles(grammars: ExtensionGrammar[]) {
-    return await Promise.all(grammars.map(async grammar => {
+  async getGrammarFiles(grammars: ExtensionGrammar[]): Promise<Map<ExtensionGrammar, IRawGrammar>> {
+    const entries = await Promise.all(grammars.map(async grammar => {
       const base = this.registry.getUri(grammar);
-      const grammarFile = await this.fileReader.readJson<IRawGrammar>(base, grammar.path);
-      return grammarFile;
+      const grammarFile = await this.fileReader.readFile(base, grammar.path);
+      // `.tmLanguage` can be an XML file
+      if (grammarFile.startsWith("<?xml") || grammarFile.startsWith("<?XML")) {
+        return [grammar, { scopeName: grammar.scopeName, patterns: [], repository: {}} as IRawGrammar] as const;
+      }
+      const json = parse(grammarFile) as IRawGrammar;
+      return [grammar, json] as const;
     }));
+    return new Map(entries);
   }
 
   /**
@@ -121,21 +128,22 @@ export class LanguageRegistrationCollectionBuilder {
       // Some basic testing (extensions disabled) shows that 0 languages have multiple configuration files
       // More basic testing (extensions enabled) shows that 4 languages have multiple configuration files
       // ['html', 'jade', 'markdown', 'rust']
-      if (languageConfigurations.length > 1) {
-        logger.info(`(vscode-shiki-bridge) language ${languageId} has multiple language configuration files (${languageConfigurations.length})`, languageConfigurations);
+      if (languageConfigurations.size > 1) {
+        logger.info(`(vscode-shiki-bridge) language ${languageId} has multiple language configuration files (${languageConfigurations.size})`, languageConfigurations);
       }
 
       const languageConfiguration = mergeLanguageConfigurations(languageConfigurations);
 
       // Some basic testing shows that only 2 languages have multiple grammar files (cpp, php)
-      if (rawGrammars.length > 1) {
-        logger.info(`(vscode-shiki-bridge) language ${languageId} has multiple grammar files (${rawGrammars.length})`, rawGrammars);
+      if (rawGrammars.size > 1) {
+        logger.info(`(vscode-shiki-bridge) language ${languageId} has multiple grammar files (${rawGrammars.size})`, rawGrammars);
       }
 
-      const grammar = grammars[0];
-      const rawGrammar = rawGrammars[0];
-
-      if (grammar && rawGrammar) {
+      // since `grammar` and `rawGrammar` should be scoped with `scopeName`, this should create language registrations without conflicts
+      for (const [grammar, rawGrammar] of rawGrammars.entries()) {
+        if (grammar.scopeName !== rawGrammar.scopeName) {
+          logger.info(`(vscode-shiki-bridge) language ${languageId} has scope mismatch in grammar contribution and grammar file: ${grammar.scopeName} !== ${rawGrammar.scopeName}`, grammar, rawGrammar);
+        }
         const languageRegistration = buildLanguageRegistration({
           grammar,
           language,
@@ -253,7 +261,7 @@ function mergeLanguageContributions(languageId: string, languages: ExtensionLang
  * Merges multiple `language-configuration.json` file contents into a single configuration.
  * Testing shows no conflicting properties are overwritten, overwrites are logged when running the vscode-shiki-bridge-example-extension
  */
-function mergeLanguageConfigurations(languageConfigurations: LanguageConfiguration[]): LanguageConfiguration {
+function mergeLanguageConfigurations(languageConfigurations: Map<ExtensionLanguage, LanguageConfiguration>): LanguageConfiguration {
   /**
    * The `initialValue` is an empty `LanguageConfiguration` to make merging less verbose
    */
@@ -275,7 +283,7 @@ function mergeLanguageConfigurations(languageConfigurations: LanguageConfigurati
     onEnterRules: [],
     wordPattern: undefined,
   };
-  return languageConfigurations.reduce((result, configuration) => {
+  return [...languageConfigurations.values()].reduce((result, configuration) => {
     if (configuration.autoClosingPairs) {
       result.autoClosingPairs!.push(...configuration.autoClosingPairs);
     }

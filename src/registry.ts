@@ -5,23 +5,23 @@ export class Registry {
   /**
    * Map of `languageId` to its aliases
    */
-  private aliases: Map<string, Set<string>> = new Map();
+  readonly aliases: Map<string, Set<string>> = new Map();
   /**
    * Map of `languageId` to its extension manifest language contribution.
    * These are plural because multiple extensions can contribute to the same language id
    * @see https://code.visualstudio.com/api/references/contribution-points#contributes.languages
    */
-  private languages: Map<string, ExtensionLanguage[]> = new Map();
+  readonly languages: Map<string, ExtensionLanguage[]> = new Map();
   /**
    * Map of `languageId` to its extension manifest grammar contributions
    * These are plural because multiple extensions can contribute to the same language id
    * @see https://code.visualstudio.com/api/references/contribution-points#contributes.grammars
    */
-  private grammars: Map<string, ExtensionGrammar[]> = new Map();
+  readonly grammars: Map<string, ExtensionGrammar[]> = new Map();
   /**
    * Map of contributions to its `extensionUri`
    */
-  private uris: Map<ExtensionGrammar | ExtensionLanguage, Uri> = new Map();
+  readonly uris: Map<ExtensionGrammar | ExtensionLanguage, Uri> = new Map();
 
   registerLanguageContribution(language: ExtensionLanguage, uri: Uri) {
     if (!language.id) {
