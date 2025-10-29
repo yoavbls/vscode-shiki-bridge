@@ -147,9 +147,14 @@ export function activate(context: vscode.ExtensionContext) {
     </style>
   </head>
   <body>
+    <nav class="container">
+      <ul>
+        ${highlighted.map(({ name }) => `<li><a href="#${name}">${name}</a></li>`).join('\n')}
+      </ul>
+    </nav>
     ${highlighted.map(entry => {
       return `
-    <div class="container">
+    <div class="container" id=${entry.name}>
       <h2><pre class="shiki"><code>${entry.name}</code><pre></h2>
       ${entry.error ? `<pre class="shiki"><code>${entry.error}</code></pre>` : ''}
       ${entry.highlighted}
