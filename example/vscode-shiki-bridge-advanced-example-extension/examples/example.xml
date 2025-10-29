@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<yml_catalog date="2018-09-25 17:22">
+  <shop>
+    <categories>
+      <category id="1278">Electronics</category>
+      <category id="1293" parentId="1278">Smartphones</category>
+      <category id="1345" parentId="1278">Phones</category>
+      <category id="3761" parentId="1278">TVs</category>
+      <category id="1553" parentId="3761">Media-players</category>
+      <category id="3798">Appliances</category>
+    </categories>
+    <offers>
+      <offer id="1637" available="true">
+        <url>http://example.com/product/id1637</url>
+        <price>226.50</price>
+        <oldprice>250</oldprice>
+        <categoryId>1293</categoryId>
+        <categoryId>1345</categoryId>
+        <picture>http://example.com/images/1637_1.jpg</picture>
+        <name>Product 1</name>
+        <param name="Color">Black</param>
+        <description>Description of the product 1637</description>
+        <vendor>Vendor name</vendor>
+        <model>Model of the product</model>
+      </offer>
+      <offer id="1638" available="false">
+        <url>http://example.com/product/id1638</url>
+        <price>545.30</price>
+        <categoryId>1293</categoryId>
+        <categoryId>1345</categoryId>
+        <picture>http://example.com/images/1638_1.jpg</picture>
+        <name>Product 2</name>
+        <param name="Color">White</param>
+        <description>Description of the product 1638</description>
+        <vendor>Vendor name</vendor>
+        <model>Model of the product</model>
+      </offer>
+    </offers>
+  </shop>
+</yml_catalog>

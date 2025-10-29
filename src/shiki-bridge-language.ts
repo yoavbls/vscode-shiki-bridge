@@ -305,7 +305,7 @@ function mergeLanguageConfigurations(languageConfigurations: LanguageConfigurati
   }, initialValue);
 }
 
-function bridgeLanguageContribution(contribution: ExtensionLanguage): Pick<LanguageRegistration, 'name' | 'displayName' | 'firstLineMatch'> {
+function bridgeLanguageContribution(contribution: ExtensionLanguage): Pick<LanguageRegistration, 'name' | 'displayName' | 'firstLineMatch' | 'fileTypes'> {
   return {
     name: contribution.id!,
     // Take the first alias that starts with an uppercase ASCII
@@ -313,6 +313,10 @@ function bridgeLanguageContribution(contribution: ExtensionLanguage): Pick<Langu
     // Some testing with the build-in extensions of VS Code shows that this always resolves to the human readable name for the language
     displayName: contribution.aliases?.find(alias => /^[A-Z]/.test(alias)),
     firstLineMatch: contribution.firstLine,
+    // Unsure what `fileTypes` are for shiki, they seem to be extensions without the `.` but that is not always the case for all `shiki` grammars
+    // We return the extensions instead, and use it to resolve extensions to a language id
+    // see: https://github.com/shikijs/textmate-grammars-themes/tree/main
+    fileTypes: contribution.extensions,
   };
 }
 
@@ -351,7 +355,7 @@ function bridgeFoldingMarkers(configuration: LanguageConfigurationFoldingMarkers
   };
 }
 
-function bridgeRawGrammar(grammar: IRawGrammar): Pick<LanguageRegistration, 'repository' | 'patterns' | 'injections' | 'injectionSelector' | 'fileTypes'> {
+function bridgeRawGrammar(grammar: IRawGrammar): Pick<LanguageRegistration, 'repository' | 'patterns' | 'injections' | 'injectionSelector'> {
   // NOTE: `scopeName` and `name` are also part of `IRawGrammar`, but we discard those
   //       `name` for `IRawGrammar` is **NOT** a language id, but a human readable name
   return {
@@ -359,9 +363,5 @@ function bridgeRawGrammar(grammar: IRawGrammar): Pick<LanguageRegistration, 'rep
     patterns: grammar.patterns,
     injections: grammar.injections,
     injectionSelector: grammar.injectionSelector,
-    // Unsure what `fileTypes` are for shiki, they seem to be extensions without the `.` but that is not always the case for all grammars
-    // In vscode grammars this property is most likely undefined
-    // see: https://github.com/shikijs/textmate-grammars-themes/tree/main
-    fileTypes: grammar.fileTypes,
   };
 }

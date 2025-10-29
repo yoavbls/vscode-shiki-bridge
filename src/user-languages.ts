@@ -40,6 +40,16 @@ interface UserLangsResult {
    * ```
    */
   resolveAlias(languageId: string): string;
+  /**
+   * A helper function to resolve an `.ext` extension to its language id.
+   * @example
+   * ```ts
+   * const result = getUserLangs(['handlebars']);
+   *
+   * const resolvedLanguageId = result.resolveExtension('.hbs');
+   * //    ^? 'handlebars'
+   */
+  resolveExtension(extension: string): string;
 }
 
 /**
@@ -81,6 +91,15 @@ export async function getUserLangs(languageIds?: string[]): Promise<UserLangsRes
     },
     resolveAlias(languageId: string): string {
       return this.get(languageId)?.name ?? languageId;
+    },
+    resolveExtension(extension: string): string {
+      for (const language of this.languages) {
+        if (language.fileTypes?.includes(extension)) {
+          return language.name;
+        }
+      }
+      // default to `text`
+      return 'text';
     }
   } satisfies UserLangsResult;
 }

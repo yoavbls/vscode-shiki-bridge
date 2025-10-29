@@ -1,0 +1,9 @@
+diff --git a/folder/user_import.csv b/folder/user_import.csv
+index 8718ca75..1395fa98 100644
+--- a/folder/user_import.csv
++++ b/folder/user_import.csv
+@@ -1,2 +1,2 @@
+-23037,,,text-entry,,,CC_EMAIL_23037,21/07/2017 06:01,20000,21/07/2017 06:00,S
+-25833,,,text-entry,,,CC_EMAIL_25833,21/07/2017 06:01,20000,21/07/2017 06:00,S
++23037,,,text-entry,,,CC_EMAIL_23037,21/07/2017 06:01,20000,21/07/2017 06:00,S
++25833,,,text-entry,,,CC_EMAIL_25833,21/07/2017 06:01,20000,21/07/2017 06:00,S

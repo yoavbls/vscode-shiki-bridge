@@ -80,11 +80,10 @@ export function activate(context: vscode.ExtensionContext) {
         .map(async ([name]) => {
           const bytes = await vscode.workspace.fs.readFile(vscode.Uri.joinPath(workspaceFolder.uri, name));
           const contents = new TextDecoder('utf-8').decode(bytes);
-          const extension = name.slice(name.lastIndexOf('.') + 1);
+          const extension = name.slice(name.lastIndexOf('.'));
           return {
             name,
-            // TODO: shiki should know about these aliases
-            lang: result.resolveAlias(extension),
+            lang: result.resolveExtension(extension),
             extension,
             contents,
           };
@@ -94,6 +93,7 @@ export function activate(context: vscode.ExtensionContext) {
         try {
           return {
             name: example.name,
+            lang: example.lang,
             highlighted: highlighter.codeToHtml(example.contents, {
               lang: example.lang,
               theme,
@@ -104,6 +104,7 @@ export function activate(context: vscode.ExtensionContext) {
           // see: https://shiki.style/languages#plain-text
           return {
             name: example.name,
+            lang: 'text',
             error,
             highlighted: highlighter.codeToHtml(example.contents, {
               lang: 'text',
@@ -144,10 +145,34 @@ export function activate(context: vscode.ExtensionContext) {
       pre.shiki .line {
         display: block;
       }
+
+      .navigation {
+        position: sticky;
+        top: 0px;
+        padding: 8px;
+        background-color: var(--vscode-editor-background);
+        box-shadow: rgba(0, 0, 0, 0.24) 0px 3px 8px;
+      }
+
+      .navigation ul {
+      }
+
+      .navigation li {
+        display: inline-flex;
+      }
+
+      .navigation a {
+        padding: 2px 4px;
+        background-color: var(--vscode-button-background);
+        color: var(--vscode-button-foreground);
+        text-decoration: none;
+        margin-bottom: 4px;
+        margin-right: 4px;
+      }
     </style>
   </head>
   <body>
-    <nav class="container">
+    <nav class="container navigation">
       <ul>
         ${highlighted.map(({ name }) => `<li><a href="#${name}">${name}</a></li>`).join('\n')}
       </ul>
@@ -156,6 +181,7 @@ export function activate(context: vscode.ExtensionContext) {
       return `
     <div class="container" id=${entry.name}>
       <h2><pre class="shiki"><code>${entry.name}</code><pre></h2>
+      <p>rendered with language: <pre><code>${entry.lang}</code></pre></p>
       ${entry.error ? `<pre class="shiki"><code>${entry.error}</code></pre>` : ''}
       ${entry.highlighted}
     </div>
