@@ -20,7 +20,7 @@
 		{
 			"type": "npm",
 			"script": "watch:esbuild",
-			"path": "example/vscode-shiki-bridge-example-extension",
+			"path": "example/vscode-shiki-bridge-advanced-example-extension",
 			"group": "build",
 			"problemMatcher": [],
 			"isBackground": true,
@@ -33,7 +33,7 @@
 		{
 			"type": "npm",
 			"script": "compile",
-			"path": "example/vscode-shiki-bridge-example-extension",
+			"path": "example/vscode-shiki-bridge-advanced-example-extension",
 			"group": "build",
 			"label": "npm: compile",
 			"problemMatcher": []
@@ -41,7 +41,7 @@
 		{
 			"type": "npm",
 			"script": "watch:tsc",
-			"path": "example/vscode-shiki-bridge-example-extension",
+			"path": "example/vscode-shiki-bridge-advanced-example-extension",
 			"group": "build",
 			"problemMatcher": "$tsc-watch",
 			"isBackground": true,
@@ -54,7 +54,7 @@
 		{
 			"type": "npm",
 			"script": "watch-tests",
-			"path": "example/vscode-shiki-bridge-example-extension",
+			"path": "example/vscode-shiki-bridge-advanced-example-extension",
 			"problemMatcher": "$tsc-watch",
 			"isBackground": true,
 			"presentation": {
