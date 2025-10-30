@@ -8,7 +8,7 @@ interface UserLangsResult {
   /**
    * The language registrations to pass to Shiki's highlighter.
    */
-  languages: LanguageRegistration[],
+  langs: LanguageRegistration[],
   /**
    * Get the language registration for the given language id.
    * Will resolve language id if it is an alias.
@@ -77,7 +77,7 @@ export async function getUserLangs(languageIds?: string[]): Promise<UserLangsRes
   const languages = await LanguageRegistrationCollectionBuilder.build(languageIds, registry, fileReader);
 
   return {
-    languages,
+    langs: languages,
     get(languageId: string): LanguageRegistrationExtended | undefined {
       for (const language of languages) {
         if (language.name === languageId) {

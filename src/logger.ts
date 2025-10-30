@@ -33,7 +33,7 @@ const createOutputLog = () => {
 };
 
 /**
- * When running an example extension, log to the `console` for to provide helpfull debug information.
+ * When running an example extension, log to the `console` for to provide helpfull debug information and to enable inspecting values.
  * Else try to create an `LogOutputChannel` to log output, which will only write out the messages, not the additional parameters.
  * By using `trace` and `debug` for 'spammy' information, we prevent writing a lot of log output, as VS Code uses Log Level `INFO` by default.
  * Fallback on using a `no-op` logger, which does not write the log output anywhere.

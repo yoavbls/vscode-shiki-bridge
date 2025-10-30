@@ -49,7 +49,7 @@ export async function showShikiPreview() {
 
     // dynamically load languages that are not loaded yet
     let loadedLanguages = highlighter.getLoadedLanguages();
-    const unloadedLanguages = result.languages.filter(language => !loadedLanguages.includes(language.name));
+    const unloadedLanguages = result.langs.filter(language => !loadedLanguages.includes(language.name));
     if (unloadedLanguages.length > 0) {
       console.log(`loading languages: `, unloadedLanguages);
       await highlighter.loadLanguage(...unloadedLanguages);
@@ -139,7 +139,8 @@ export async function showShikiPreview() {
           border-radius: 8px;
           line-height: 1;
           background-color: var(--vscode-editor-background);
-          border: solid 2px var(--vscode-textPreformat-background)
+          border: solid 2px var(--vscode-textPreformat-background);
+          overflow-x: auto;
         }
         pre.shiki .line {
           display: block;

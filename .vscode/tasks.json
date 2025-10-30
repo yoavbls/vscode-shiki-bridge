@@ -22,7 +22,7 @@
 			"script": "watch:esbuild",
 			"path": "example/vscode-shiki-bridge-advanced-example-extension",
 			"group": "build",
-			"problemMatcher": [],
+			"problemMatcher": ["$esbuild-watch"],
 			"isBackground": true,
 			"label": "npm: watch:esbuild",
 			"presentation": {

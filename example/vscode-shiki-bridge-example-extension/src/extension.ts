@@ -25,7 +25,7 @@ export function activate(context: vscode.ExtensionContext) {
 
       const highlighter = await createHighlighter({
         themes,
-        langs: result.languages,
+        langs: result.langs,
       });
 
       const htmlSnippet = highlighter.codeToHtml(

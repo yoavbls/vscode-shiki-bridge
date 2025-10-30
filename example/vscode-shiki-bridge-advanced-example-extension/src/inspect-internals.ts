@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 import type { TextDocumentContentProvider } from "vscode";
 import { getUserLangs as _getUserLangs } from "vscode-shiki-bridge";
-import { ExtensionFileReader, LanguageRegistrationCollectionBuilder, Registry } from 'vscode-shiki-bridge/internals';
+import { ExtensionFileReader, Registry } from 'vscode-shiki-bridge/internals';
 
 function replacer(key: string, value: unknown) {
   if (value instanceof Map) {
@@ -94,7 +94,7 @@ export async function inspectInternals() {
 
 async function inspectLanguageRegistration() {
   const result = await getUserLangs();
-  const languageId = await vscode.window.showQuickPick(result.languages.map(lang => lang.name), {
+  const languageId = await vscode.window.showQuickPick(result.langs.map(lang => lang.name), {
     ignoreFocusOut: true,
     placeHolder: 'Choose a Language ID',
     title: "Inspect Language Registration",
@@ -132,7 +132,7 @@ export async function getRegistryTextDocumentContent() {
 
 async function inspectLanguageContributions() {
   const result = await getUserLangs();
-  const languageId = await vscode.window.showQuickPick(result.languages.map(lang => lang.name), {
+  const languageId = await vscode.window.showQuickPick(result.langs.map(lang => lang.name), {
     ignoreFocusOut: true,
     placeHolder: 'Choose a Language ID',
     title: "Inspect Language Contributions",
@@ -162,7 +162,7 @@ export async function getLanguageContributionsTextDocumentContent(path: string) 
 
 async function inspectGrammarContributions() {
   const result = await getUserLangs();
-  const languageId = await vscode.window.showQuickPick(result.languages.map(lang => lang.name), {
+  const languageId = await vscode.window.showQuickPick(result.langs.map(lang => lang.name), {
     ignoreFocusOut: true,
     placeHolder: 'Choose a Language ID',
     title: "Inspect Grammar Contributions",

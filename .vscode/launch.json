@@ -9,7 +9,7 @@
 			"name": "Run Extension",
 			"type": "extensionHost",
 			"request": "launch",
-			"preLaunchTask": "npm: compile",
+			"preLaunchTask": "npm: watch:esbuild",
 			"cwd": "${workspaceFolder}/example/vscode-shiki-bridge-advanced-example-extension",
 			"args": [
 				"--extensionDevelopmentPath=${workspaceFolder}/example/vscode-shiki-bridge-advanced-example-extension",
@@ -23,7 +23,7 @@
 			"name": "Run Extension (all extensions disabled)",
 			"type": "extensionHost",
 			"request": "launch",
-			"preLaunchTask": "npm: compile",
+			"preLaunchTask": "npm: watch:esbuild",
 			"cwd": "${workspaceFolder}/example/vscode-shiki-bridge-advanced-example-extension",
 			"args": [
                 "--disable-extensions",
