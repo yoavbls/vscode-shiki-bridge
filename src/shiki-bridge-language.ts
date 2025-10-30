@@ -9,12 +9,13 @@ import { logger } from './logger.js';
 import { parse } from "jsonc-parser";
 
 /**
- * The {@link LanguageConfiguration} type from vscode is incomplete, so we augment it with our own addition
+ * The {@link LanguageConfiguration} type from vscode is incomplete, so we augment it with our own addition.
+ * @see {@link LanguageConfigurationFoldingMarkers}
  */
 export type LanguageConfigurationFull = LanguageConfigurationFoldingMarkers & LanguageConfiguration;
 
 /**
- * Seems like `vscode` does not have {@link LanguageConfiguration} updated
+ * Seems like `vscode` does not have a `folding` property in {@link LanguageConfiguration} , so we create the type here.
  * @see https://code.visualstudio.com/api/language-extensions/language-configuration-guide#folding
  */
 export interface LanguageConfigurationFoldingMarkers {
@@ -26,6 +27,13 @@ export interface LanguageConfigurationFoldingMarkers {
   };
 }
 
+/**
+ * To not lose the information about which files a language could apply, we keep the information language contributions provide
+ */
+export type LanguageRegistrationMeta = Pick<ExtensionLanguage, 'filenames' | 'filenamePatterns' | 'extensions' | 'mimetypes'>;
+
+export type LanguageRegistrationExtended = LanguageRegistration & LanguageRegistrationMeta;
+
 function hasConfiguration(language: ExtensionLanguage): language is ExtensionLanguage & { configuration: string } {
   return !!language.configuration;
 }
@@ -33,6 +41,9 @@ function hasConfiguration(language: ExtensionLanguage): language is ExtensionLan
 export class LanguageRegistrationCollectionBuilder {
   constructor(readonly registry: Registry, readonly fileReader: ExtensionFileReader) {}
 
+  /**
+   * Fetch the `language-configuration.json` files for the given `languages` contributions
+   */
   async getLanguageConfigurationFiles(languages: ExtensionLanguage[]): Promise<Map<ExtensionLanguage, LanguageConfigurationFull>> {
     const entries = await Promise.all(languages
       .filter(hasConfiguration)
@@ -44,6 +55,14 @@ export class LanguageRegistrationCollectionBuilder {
     return new Map(entries);
   }
 
+  /**
+   * Fetch the `grammar.tmLanguage[.json]` files for the given `grammars` contributions
+   * These can be in the following formats:
+   * - cson
+   * - plist
+   * - json
+   * - yaml
+   */
   async getGrammarFiles(grammars: ExtensionGrammar[]): Promise<Map<ExtensionGrammar, IRawGrammar>> {
     const entries = await Promise.all(grammars.map(async grammar => {
       const base = this.registry.getUri(grammar);
@@ -61,14 +80,14 @@ export class LanguageRegistrationCollectionBuilder {
   /**
    * This function needs to build the language registrations for the given language ids.
    * It needs to:
-   * - find the given language id's
+   * - find the given language ids
    * - build at least 1 language registration
    *   - merge the language contributions
    *   - language configuration files are part of a language contribution
    *   - for each grammar (grammars are always scoped), build a language registration merge the contributions and the grammar
    * - find any embedded languages, and recursively add those to the result
    */
-  static async build(languageIds: string[], registry: Registry, fileReader: ExtensionFileReader): Promise<LanguageRegistration[]> {
+  static async build(languageIds: string[], registry: Registry, fileReader: ExtensionFileReader): Promise<LanguageRegistrationExtended[]> {
     // make a copy of the array, so we don't modify the original
     languageIds = [...languageIds];
     const builder = new LanguageRegistrationCollectionBuilder(registry, fileReader);
@@ -77,73 +96,69 @@ export class LanguageRegistrationCollectionBuilder {
     const languageIdsWithoutContributions: string[] = [];
 
     for (const languageId of languageIds) {
-      const aliases = registry.getAliases(languageId);
       const languages = registry.getLanguageContributions(languageId);
       const grammars = registry.getGrammarContributions(languageId);
 
-      // Some basic testing (extensions enabled) show the following languageId's have no language and grammar contributions
+      // Testing shows some languages have no language and grammar contributions
       // ['smarty', 'vs_net', 'dosbatch', 'coffee', 'objc', 'perl6', 'scala', 'plaintext', 'sass', 'stylus', 'postcss', 'json5']
       // but the following are aliased
       // 'coffee' => 'coffeescript'
       // 'perl6' => 'raku'
-      // TODO: they could have a grammar contribution, without the `language` property set
+      // These could be defined in an `embeddedLanguage` property from a different language
+      // and thus required to be resolved to a language registration or else Shiki will throw when trying to highlight a language that has this id as part of its `embeddedLang`.
       if (languages.length === 0 && grammars.length === 0) {
-        logger.info(`(vscode-shiki-bridge) language ${languageId} has no language or grammar contributions`);
+        logger.debug(`language ${languageId} has no language or grammar contributions`);
         const aliased = registry.resolveAliasToLanguageId(languageId);
         if (aliased !== languageId) {
-          logger.info(`(vscode-shiki-bridge)  but is an alias for ${aliased}`);
+          logger.debug(` but is an alias for ${aliased}`);
         }
         languageIdsWithoutContributions.push(languageId);
         continue;
       }
 
       if (languages.length === 0 && grammars.length > 0) {
-        logger.info(`(vscode-shiki-bridge) language ${languageId} has grammars (${grammars.length}) but no language contribution`, grammars);
+        logger.debug(`language ${languageId} has grammars (${grammars.length}) but no language contribution`, grammars);
       }
 
       if (languages.length > 0 && grammars.length === 0) {
-        logger.info(`(vscode-shiki-bridge) language ${languageId} has languages (${languages.length}) but no grammar contribution`, languages);
+        logger.debug(`language ${languageId} has languages (${languages.length}) but no grammar contribution`, languages);
       }
 
       if (languages.length > 1) {
-        logger.info(`(vscode-shiki-bridge) language ${languageId} has multiple language contributions (${languages.length})`, languages);
+        logger.debug(`language ${languageId} has multiple language contributions (${languages.length})`, languages);
         const firstLines = languages.map(lang => lang.firstLine).filter((firstLine): firstLine is string => !!firstLine);
         if (firstLines.length > 1 && firstLines.slice(1).some(other => other !== firstLines[0])) {
-          logger.info(`(vscode-shiki-bridge) language ${languageId} has conflicting firstLines: ${firstLines}`, firstLines);
+          logger.debug(`language ${languageId} has conflicting firstLines: ${firstLines}`, firstLines);
         }
       }
 
       if (grammars.length > 1) {
-        logger.info(`(vscode-shiki-bridge) language ${languageId} has multiple grammars contributions (${grammars.length})`, grammars);
+        logger.debug(`language ${languageId} has multiple grammars contributions (${grammars.length})`, grammars);
       }
 
-      // it seems safe to merge the language contributions
-      // duplicates mostly add `filenames`, `extensions`, `aliases`, `filenamePatterns` and `mimetypes`
-      // duplicate language configurations are merged below
-      // only thing that could conflict is the `firstLine` property
       const language = mergeLanguageContributions(languageId, languages);
 
       const languageConfigurations = await builder.getLanguageConfigurationFiles(languages);
       const rawGrammars = await builder.getGrammarFiles(grammars);
 
-      // Some basic testing (extensions disabled) shows that 0 languages have multiple configuration files
-      // More basic testing (extensions enabled) shows that 4 languages have multiple configuration files
+      // Testing shows that some languages have multiple configuration files
       // ['html', 'jade', 'markdown', 'rust']
       if (languageConfigurations.size > 1) {
-        logger.info(`(vscode-shiki-bridge) language ${languageId} has multiple language configuration files (${languageConfigurations.size})`, languageConfigurations);
+        logger.debug(`language ${languageId} has multiple language configuration files (${languageConfigurations.size})`, languageConfigurations);
       }
 
       const languageConfiguration = mergeLanguageConfigurations(languageConfigurations);
 
-      // Some basic testing shows that only 2 languages have multiple grammar files (cpp, php)
+      // Testing shows that some languages have multiple grammar files
+      // ['cpp', 'php']
       if (rawGrammars.size > 1) {
-        logger.info(`(vscode-shiki-bridge) language ${languageId} has multiple grammar files (${rawGrammars.size})`, rawGrammars);
+        logger.debug(`language ${languageId} has multiple grammar files (${rawGrammars.size})`, rawGrammars);
       }
 
       // since `grammar` and `rawGrammar` should be scoped with `scopeName`, this should create language registrations without conflicts
       for (const [grammar, rawGrammar] of rawGrammars.entries()) {
         if (grammar.scopeName !== rawGrammar.scopeName) {
-          logger.info(`(vscode-shiki-bridge) language ${languageId} has scope mismatch in grammar contribution and grammar file: ${grammar.scopeName} !== ${rawGrammar.scopeName}`, grammar, rawGrammar);
+          logger.debug(`language ${languageId} has scope mismatch in grammar contribution and grammar file: ${grammar.scopeName} !== ${rawGrammar.scopeName}`, grammar, rawGrammar);
         }
 
         const languageRegistration = buildLanguageRegistration({
@@ -151,17 +166,12 @@ export class LanguageRegistrationCollectionBuilder {
           language,
           languageConfiguration,
           rawGrammar,
-          aliases,
         });
         results.push(languageRegistration);
       }
 
 
-      // This will keep the for..of loop going as long as there are more embedded languages that need a LanguageRegistration
-      // Some basic testing (extensions disabled) shows 7 embedded languages are added
-      // ['smarty', 'vs_net', 'dosbatch', 'coffee', 'objc', 'perl6', 'scala']
-      // More basic testing (extensions enabled) shows 12 embedded languages are added
-      // ['smarty', 'vs_net', 'dosbatch', 'coffee', 'objc', 'perl6', 'scala', 'plaintext', 'sass', 'stylus', 'postcss', 'json5']
+      // This will keep the for..of loop going as long as grammars have embedded languages we have not scheduled to build a language registration for
       for (const grammar of grammars) {
         if (!grammar.embeddedLanguages) {
           continue;
@@ -174,7 +184,7 @@ export class LanguageRegistrationCollectionBuilder {
       }
     }
 
-    // TODO: clean this up
+    // When all requested language ids are resolved to `LanguageRegistration`
     const scopeNames = results.reduce((scopeNames, registration) => {
       findScopesInRawGrammar(registration, scopeNames);
       return scopeNames;
@@ -183,7 +193,7 @@ export class LanguageRegistrationCollectionBuilder {
       const grammars = registry.getScopeContributions(scopeName);
       for (const grammar of grammars) {
         const uri = registry.getUri(grammar);
-        const rawGrammar = await fileReader.readJson<IRawGrammar>(uri, grammar.path);
+        const rawGrammar = await fileReader.readTmLanguage<IRawGrammar>(uri, grammar.path);
         const languageRegistration = buildLanguageRegistration({
           grammar,
           language: {
@@ -191,7 +201,6 @@ export class LanguageRegistrationCollectionBuilder {
           },
           languageConfiguration: {},
           rawGrammar,
-          aliases: [],
         });
         results.push(languageRegistration);
       }
@@ -212,8 +221,14 @@ export class LanguageRegistrationCollectionBuilder {
   }
 }
 
+/**
+ * Grab the non-exported type `IRawGrammar`
+ */
 type IRawRule = IRawGrammar['patterns'][number];
 
+/**
+ * Recursively finds the `scopeName` included in a `IRawGrammar`
+ */
 function findScopesInRawGrammar(rawGrammar: IRawGrammar, scopeNames: Set<string> = new Set<string>()): Set<string> {
   if (rawGrammar.patterns) {
     findScopesInRules(rawGrammar.patterns, scopeNames);
@@ -224,6 +239,9 @@ function findScopesInRawGrammar(rawGrammar: IRawGrammar, scopeNames: Set<string>
   return scopeNames;
 }
 
+/**
+ * Recursively finds the `scopeName` included in a `IRawGrammar[]` iterable
+ */
 function findScopesInRules(rules: Iterable<IRawRule>, scopeNames: Set<string>): Set<string> {
   for (const rule of rules) {
     findScopesInRule(rule, scopeNames);
@@ -231,10 +249,15 @@ function findScopesInRules(rules: Iterable<IRawRule>, scopeNames: Set<string>): 
   return scopeNames;
 }
 
+/**
+ * Recursively finds the `scopeName` included in a `IRawRule`
+ */
 function findScopesInRule(rule: IRawRule, scopeNames: Set<string>) {
   if (rule.include) {
+    // eg. 'text.basic.html#tags'
     const [scopeName,] = rule.include.split('#');
-    if (scopeName && scopeName !== '$self') {
+    // ignore scopeNames starting with a '$', like '$self'
+    if (scopeName && !scopeName.startsWith('$')) {
       scopeNames.add(scopeName);
     }
   }
@@ -263,45 +286,48 @@ type BuildLanguageRegistrationParams = {
   grammar: ExtensionGrammar,
   languageConfiguration: LanguageConfigurationFull,
   rawGrammar: IRawGrammar,
-  aliases: string[],
 };
 
-function buildLanguageRegistration({ language, grammar, languageConfiguration, rawGrammar, aliases }: BuildLanguageRegistrationParams): LanguageRegistration {
+/**
+ * Builds a `LanguageRegistrationExtended` from the given:
+ * - `language` as a `ExtensionLanguage` contribution
+ * - `grammar` as a `ExtensionGrammar` contribution
+ * - `languageConfiguration` as the configuration defined in a `language-configuration.json` file
+ * - `rawGrammar` as the grammar defined in a `grammar.tmLanguage[.json]` file
+ */
+function buildLanguageRegistration({ language, grammar, languageConfiguration, rawGrammar }: BuildLanguageRegistrationParams): LanguageRegistrationExtended {
   return {
     ...bridgeLanguageContribution(language),
     ...bridgeGrammarContribution(grammar),
     ...bridgeRawGrammar(rawGrammar),
     ...bridgeFoldingMarkers(languageConfiguration),
-    aliases,
   };
 }
 
 /**
- * Only for internal testing purposes.
- * So far no language configuration founds where an overwrite would change the value, only a few duplicates which change nothing in the end result
- * TODO: don't use this in release
- * @internal
+ * Warn when given `property` of `source`, will meaningfully overwrite `property` in `target.
  */
 function warnForPropertyOverwrite<T extends object>(target: T, source: T | undefined, property: keyof T & string) {
   if (source && target[property] && source[property]) {
     if (typeof target[property] !== typeof source[property] || target[property].toString() !== source[property].toString()) {
-      logger.warn(`(vscode-shiki-bridge) overwriting ${property}: '${target[property]}' with '${source[property]}'`, target[property], source[property]);
+      logger.warn(`overwriting ${property}: '${target[property]}' with '${source[property]}'`, target[property], source[property]);
     }
   }
 }
 
+/**
+ * It seems safe to merge language contributions to a single object.
+ * Duplicate language contributions usually add `filenames`, `extensions`, `aliases`, `filenamePatterns` and `mimetypes`.
+ * If `firstLine` gets overwritten, a warning is logged.
+ */
 function mergeLanguageContributions(languageId: string, languages: ExtensionLanguage[]): ExtensionLanguage {
   const initialValue: ExtensionLanguage = {
     id: languageId,
     aliases: [],
-    // configurations are already handled, do not merge it into the merged language contribution
-    configuration: undefined,
+    firstLine: undefined,
     extensions: [],
     filenamePatterns: [],
     filenames: [],
-    firstLine: undefined,
-    // icon is a property not relevant for shiki
-    icon: undefined,
     mimetypes: [],
   };
   return languages.reduce((result, language) => {
@@ -330,7 +356,7 @@ function mergeLanguageContributions(languageId: string, languages: ExtensionLang
 
 /**
  * Merges multiple `language-configuration.json` file contents into a single configuration.
- * Testing shows no conflicting properties are overwritten, overwrites are logged when running the vscode-shiki-bridge-example-extension
+ * Testing shows no conflicting properties are overwritten, overwrites will cause a warning to be logged.
  */
 function mergeLanguageConfigurations(languageConfigurations: Map<ExtensionLanguage, LanguageConfiguration>): LanguageConfiguration {
   /**
@@ -384,34 +410,48 @@ function mergeLanguageConfigurations(languageConfigurations: Map<ExtensionLangua
   }, initialValue);
 }
 
-function bridgeLanguageContribution(contribution: ExtensionLanguage): Pick<LanguageRegistration, 'name' | 'displayName' | 'firstLineMatch' | 'fileTypes'> {
+/**
+ * Transform a `ExtensionLanguage` into properties of `LanguageRegistration` for use with Shiki highlighter.
+ * Also keeps the `LanguageRegistrationMeta` information about when a language could apply to a file/content.
+ */
+function bridgeLanguageContribution(contribution: ExtensionLanguage): Pick<LanguageRegistration, 'name' | 'displayName' | 'firstLineMatch' | 'aliases'> & LanguageRegistrationMeta {
+  const name = contribution.id!;
+  // Shiki will throw if a language registration includes its own name as one of its aliases, so we remove it from the list.
+  const aliases = contribution.aliases?.filter(alias => alias !== name);
   return {
-    name: contribution.id!,
+    name,
+    aliases,
     // Take the first alias that starts with an uppercase ASCII
     // eg. `aliases: ['Python', 'py']`, or `aliases: ['TypeScript', 'ts']`
-    // Some testing with the build-in extensions of VS Code shows that this always resolves to the human readable name for the language
+    // Testing shows that this will always resolve to the human readable name of the language
     displayName: contribution.aliases?.find(alias => /^[A-Z]/.test(alias)),
     firstLineMatch: contribution.firstLine,
-    // Unsure what `fileTypes` are for shiki, they seem to be extensions without the `.` but that is not always the case for all `shiki` grammars
-    // We return the extensions instead, and use it to resolve extensions to a language id
-    // see: https://github.com/shikijs/textmate-grammars-themes/tree/main
-    fileTypes: contribution.extensions,
+    extensions: contribution.extensions,
+    filenamePatterns: contribution.filenamePatterns,
+    filenames: contribution.filenames,
+    mimetypes: contribution.mimetypes,
   };
 }
 
+/**
+ * Transform a `ExtensionGrammar` into properties of `LanguageRegistration` for use with Shiki highlighter.
+ */
 function bridgeGrammarContribution(contribution: ExtensionGrammar): Pick<LanguageRegistration, 'embeddedLangs' | 'embeddedLangsLazy' | 'scopeName' | 'injectTo' | 'balancedBracketSelectors' | 'unbalancedBracketSelectors'> {
   return {
     scopeName: contribution.scopeName,
     embeddedLangs: [],
     embeddedLangsLazy: bridgeEmbeddedLanguages(contribution.language, contribution.embeddedLanguages),
     injectTo: contribution.injectTo,
-    // Very unclearwhat these are exactly and why the names vary, but they seem to be about the same concept
+    // Very unclear what these are exactly and why the names vary, but they seem to be about the same concept
     // see: https://code.visualstudio.com/updates/v1_67#_textmate-grammars-can-mark-tokens-as-unbalanced
     balancedBracketSelectors: contribution.balancedBracketScopes,
     unbalancedBracketSelectors: contribution.unbalancedBracketScopes,
   };
 }
 
+/**
+ * Transform a `embeddedLanguages` property into a `embeddedLangs` for use with Shiki highlighter.
+ */
 function bridgeEmbeddedLanguages(languageId?: string, embeddedLanguages?: Record<string, string>): string[] {
   if (!embeddedLanguages) {
     return [];
@@ -426,7 +466,9 @@ function bridgeEmbeddedLanguages(languageId?: string, embeddedLanguages?: Record
   return [...unique];
 }
 
-
+/**
+ * Transform a `LanguageConfigurationFoldingMarkers` into properties of `LanguageRegistration` for use with Shiki highlighter.
+ */
 function bridgeFoldingMarkers(configuration: LanguageConfigurationFoldingMarkers): Pick<LanguageRegistration, 'foldingStartMarker' | 'foldingStopMarker'> {
   // these seem to map to https://code.visualstudio.com/api/language-extensions/language-configuration-guide#folding
   // part of the `language-configuration.json` file
@@ -436,13 +478,20 @@ function bridgeFoldingMarkers(configuration: LanguageConfigurationFoldingMarkers
   };
 }
 
-function bridgeRawGrammar(grammar: IRawGrammar): Pick<LanguageRegistration, 'repository' | 'patterns' | 'injections' | 'injectionSelector'> {
+/**
+ * Transform a `IRawGrammar` into properties of `LanguageRegistration` for use with Shiki highlighter.
+ */
+function bridgeRawGrammar(grammar: IRawGrammar): Pick<LanguageRegistration, 'repository' | 'patterns' | 'injections' | 'injectionSelector' | 'fileTypes'> {
   // NOTE: `scopeName` and `name` are also part of `IRawGrammar`, but we discard those
+  //       `scopeName` is also defined in `ExtensionGrammar` which should take precedence
   //       `name` for `IRawGrammar` is **NOT** a language id, but a human readable name
   return {
     repository: grammar.repository,
     patterns: grammar.patterns,
     injections: grammar.injections,
     injectionSelector: grammar.injectionSelector,
+    // I have scanned the source code of Shiki and vscode-textmate and neither of them do anything with `fileTypes`, we just pass it on for completions sake.
+    // `LanguageRegistrationMeta` is the interface that stores the information that extensions provide about what language should apply to what kind of files/content.
+    fileTypes: grammar.fileTypes,
   };
 }

@@ -193,7 +193,7 @@ export async function getGrammarContributionsTextDocumentContent(path: string) {
 
 async function inspectScopeContributions() {
   const registry = getRegistry();
-  const scopes = [...registry.scopes.keys()];
+  const scopes = [...registry.orphanedScopes.keys()];
   const scope = await vscode.window.showQuickPick(scopes, {
     ignoreFocusOut: true,
     placeHolder: 'Choose a Scope Name',

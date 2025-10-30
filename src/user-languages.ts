@@ -1,12 +1,12 @@
 import type { LanguageRegistration } from "shiki/types";
-import { LanguageRegistrationCollectionBuilder } from "./shiki-bridge-language.js";
+import { LanguageRegistrationCollectionBuilder, type LanguageRegistrationExtended } from "./shiki-bridge-language.js";
 
 import { ExtensionFileReader, getVscode } from "./vscode-utils.js";
 import { Registry } from "./registry.js";
 
 interface UserLangsResult {
   /**
-   * The language registrations to pass to `shiki`'s highlighter.
+   * The language registrations to pass to Shiki's highlighter.
    */
   languages: LanguageRegistration[],
   /**
@@ -53,7 +53,7 @@ interface UserLangsResult {
 }
 
 /**
- * Collect TextMate grammars contributed by installed VS Code extensions to use with `shiki`'s highlighter.
+ * Collect TextMate grammars contributed by installed VS Code extensions to use with Shiki's highlighter.
  * @param languageIds - If provided, only loads grammars for those specific language IDs.
  */
 export async function getUserLangs(languageIds?: string[]): Promise<UserLangsResult> {
@@ -78,8 +78,8 @@ export async function getUserLangs(languageIds?: string[]): Promise<UserLangsRes
 
   return {
     languages,
-    get(languageId: string): LanguageRegistration | undefined {
-      for (const language of this.languages) {
+    get(languageId: string): LanguageRegistrationExtended | undefined {
+      for (const language of languages) {
         if (language.name === languageId) {
           return language;
         }
@@ -93,8 +93,8 @@ export async function getUserLangs(languageIds?: string[]): Promise<UserLangsRes
       return this.get(languageId)?.name ?? languageId;
     },
     resolveExtension(extension: string): string {
-      for (const language of this.languages) {
-        if (language.fileTypes?.includes(extension)) {
+      for (const language of languages) {
+        if (language.extensions?.includes(extension)) {
           return language.name;
         }
       }

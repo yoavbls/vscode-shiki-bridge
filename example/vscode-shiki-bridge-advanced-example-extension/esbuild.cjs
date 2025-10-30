@@ -50,7 +50,7 @@ async function main() {
     sourcesContent: false,
     platform: "node",
     outfile: "dist/extension.cjs",
-    external: ["vscode", "jsonc-parser"],
+    external: ["vscode", "jsonc-parser", "cson", "fast-plist", "js-yaml", "jsonc-parser"],
     logLevel: "silent",
     plugins: [aliasPlugin, esbuildProblemMatcherPlugin],
   });

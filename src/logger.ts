@@ -13,22 +13,37 @@ const noopLogger: Logger = {
     error() {},
 };
 
-/**
- * We would use [`ExtensionContext.extensionMode`](https://code.visualstudio.com/api/references/vscode-api#ExtensionContext) but since we don't have acces to it,
- * We probe for the `vscode-shiki-bridge-example-extension` being available
- */
-const isDebugMode = () => {
+const isRunningExampleExtension = () => {
     const vscode = getVscode();
     const extension = vscode.extensions.getExtension('vscode-shiki-bridge.vscode-shiki-bridge-example-extension');
     return !!extension;
 };
 
+const createOutputLog = () => {
+    const vscode = getVscode();
+    const output = vscode.window.createOutputChannel('vscode-shiki-bridge', { log: true });
+    return {
+        trace(message: any) { output.trace(message.toString()); },
+        debug(message: any) { output.debug(message.toString()); },
+        log(message: any) { output.info(message.toString()); },
+        info(message: any) { output.info(message.toString()); },
+        warn(message: any) { output.warn(message.toString()); },
+        error(message: any) { output.error(message.toString()); },
+    };
+};
+
+/**
+ * When running an example extension, log to the `console` for to provide helpfull debug information.
+ * Else try to create an `LogOutputChannel` to log output, which will only write out the messages, not the additional parameters.
+ * By using `trace` and `debug` for 'spammy' information, we prevent writing a lot of log output, as VS Code uses Log Level `INFO` by default.
+ * Fallback on using a `no-op` logger, which does not write the log output anywhere.
+ */
 const logger: Logger = (function () {
     try {
-        if (isDebugMode()) {
+        if (isRunningExampleExtension()) {
             return console;
         }
-        return noopLogger;
+        return createOutputLog();
     } catch (_) {
         return noopLogger;
     }

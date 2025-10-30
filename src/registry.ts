@@ -4,29 +4,33 @@ import { logger } from "./logger.js";
 
 export class Registry {
   /**
-   * Map of `languageId` to its aliases
+   * Map of `languageId` to its aliases.
    */
   readonly aliases: Map<string, Set<string>> = new Map();
   /**
    * Map of `languageId` to its extension manifest language contribution.
-   * These are plural because multiple extensions can contribute to the same language id
+   * These are plural because multiple extensions can contribute to the same language id.
    * @see https://code.visualstudio.com/api/references/contribution-points#contributes.languages
    */
   readonly languages: Map<string, ExtensionLanguage[]> = new Map();
   /**
    * Map of `languageId` to its extension manifest grammar contributions
-   * These are plural because multiple extensions can contribute to the same language id
+   * These are plural because multiple extensions can contribute to the same language id.
    * @see https://code.visualstudio.com/api/references/contribution-points#contributes.grammars
    */
   readonly grammars: Map<string, ExtensionGrammar[]> = new Map();
   /**
-   * Map of contributions to its `extensionUri`
+   * Map of contributions to its `extensionUri`.
    */
   readonly uris: Map<ExtensionGrammar | ExtensionLanguage, Uri> = new Map();
   /**
-   * TODO: document this
+   * Map of `scopeName` to its extension manifest grammar contribution
+   * These are plural because multiple extensions can contribute to the same language id.
+   * Some extensions contribute a grammar without a `language` property, these are considered `orphaned` by vscode-shiki-bridge.
+   * An example is the `text.html.basic`
+   * Shiki requires `LanguageRegistration` to have a `language` property, so
    */
-  readonly scopes: Map<string, ExtensionGrammar[]> = new Map();
+  readonly orphanedScopes: Map<string, ExtensionGrammar[]> = new Map();
 
   registerLanguageContribution(language: ExtensionLanguage, uri: Uri) {
     if (!language.id) {
@@ -39,10 +43,7 @@ export class Registry {
     }
     if (language.aliases) {
       language.aliases.forEach(alias => {
-        // Shiki can not deal with circular aliases, so we filter them out
-        if (language.id !== alias) {
-          aliases.add(alias);
-        }
+        aliases.add(alias);
       });
     }
     let languages = this.languages.get(language.id);
@@ -85,18 +86,18 @@ export class Registry {
     return this.grammars.get(languageId) ?? [];
   }
 
-  registerScopeContribution(grammar: ExtensionGrammar, uri: Uri) {
-    let scopes = this.scopes.get(grammar.scopeName);
+  registerOrphanScopeContribution(grammar: ExtensionGrammar, uri: Uri) {
+    let scopes = this.orphanedScopes.get(grammar.scopeName);
     if (!scopes) {
       scopes = [];
-      this.scopes.set(grammar.scopeName, scopes);
+      this.orphanedScopes.set(grammar.scopeName, scopes);
     }
     scopes.push(grammar);
     this.uris.set(grammar, uri);
   }
 
   getScopeContributions(scopeName: string): ExtensionGrammar[] {
-    return [...this.scopes.get(scopeName) ?? []];
+    return [...this.orphanedScopes.get(scopeName) ?? []];
   }
 
   getLanguageIds(): string[] {
@@ -132,8 +133,8 @@ export class Registry {
           if (hasLanguage(grammar)) {
             registry.registerGrammarContribution(grammar, extension.extensionUri);
           } else {
-            logger.info(`(vscode-shiki-bridge) extension '${manifest.name}' has no language set for grammar with scope: '${grammar.scopeName}'`);
-            registry.registerScopeContribution(grammar, extension.extensionUri);
+            logger.debug(`extension '${manifest.name}' has no language set for grammar with scope: '${grammar.scopeName}'`);
+            registry.registerOrphanScopeContribution(grammar, extension.extensionUri);
           }
         }
       }
