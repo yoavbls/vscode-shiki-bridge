@@ -72,7 +72,7 @@ export class LanguageRegistrationCollectionBuilder {
     // make a copy of the array, so we don't modify the original
     languageIds = [...languageIds];
     const builder = new LanguageRegistrationCollectionBuilder(registry, fileReader);
-    const result: LanguageRegistration[] = [];
+    const results: LanguageRegistration[] = [];
 
     const languageIdsWithoutContributions: string[] = [];
 
@@ -86,6 +86,7 @@ export class LanguageRegistrationCollectionBuilder {
       // but the following are aliased
       // 'coffee' => 'coffeescript'
       // 'perl6' => 'raku'
+      // TODO: they could have a grammar contribution, without the `language` property set
       if (languages.length === 0 && grammars.length === 0) {
         logger.info(`(vscode-shiki-bridge) language ${languageId} has no language or grammar contributions`);
         const aliased = registry.resolveAliasToLanguageId(languageId);
@@ -106,8 +107,8 @@ export class LanguageRegistrationCollectionBuilder {
 
       if (languages.length > 1) {
         logger.info(`(vscode-shiki-bridge) language ${languageId} has multiple language contributions (${languages.length})`, languages);
-        const firstLines = languages.map(lang => lang.firstLine);
-        if (firstLines.length > 1) {
+        const firstLines = languages.map(lang => lang.firstLine).filter((firstLine): firstLine is string => !!firstLine);
+        if (firstLines.length > 1 && firstLines.slice(1).some(other => other !== firstLines[0])) {
           logger.info(`(vscode-shiki-bridge) language ${languageId} has conflicting firstLines: ${firstLines}`, firstLines);
         }
       }
@@ -144,6 +145,7 @@ export class LanguageRegistrationCollectionBuilder {
         if (grammar.scopeName !== rawGrammar.scopeName) {
           logger.info(`(vscode-shiki-bridge) language ${languageId} has scope mismatch in grammar contribution and grammar file: ${grammar.scopeName} !== ${rawGrammar.scopeName}`, grammar, rawGrammar);
         }
+
         const languageRegistration = buildLanguageRegistration({
           grammar,
           language,
@@ -151,7 +153,7 @@ export class LanguageRegistrationCollectionBuilder {
           rawGrammar,
           aliases,
         });
-        result.push(languageRegistration);
+        results.push(languageRegistration);
       }
 
 
@@ -172,6 +174,24 @@ export class LanguageRegistrationCollectionBuilder {
       }
     }
 
+    // TODO: figure this out
+    // const scopeNames = findScopesInRawGrammar(rawGrammar);
+    // for (const scopeName of scopeNames) {
+    //   const grammars = registry.getScopeContributions(scopeName);
+    //   for (const grammar of grammars) {
+    //     const uri = registry.getUri(grammar);
+    //     const rawGrammar = await fileReader.readJson<IRawGrammar>(uri, grammar.path);
+    //     const languageRegistration = buildLanguageRegistration({
+    //       grammar,
+    //       language,
+    //       languageConfiguration,
+    //       rawGrammar,
+    //       aliases,
+    //     });
+    //     results.push(languageRegistration);
+    //   }
+    // }
+
     // TODO: we have to handle language ids without contributions:
     //         - remove them from any `embeddedLangs`
     //         - create empty language registrations for them
@@ -183,7 +203,53 @@ export class LanguageRegistrationCollectionBuilder {
       if (isAlias) {} else {}
     });
 
-    return result;
+    return results;
+  }
+}
+
+type IRawRule = IRawGrammar['patterns'][number];
+
+function findScopesInRawGrammar(rawGrammar: IRawGrammar, scopeNames: Set<string> = new Set<string>()): Set<string> {
+  if (rawGrammar.patterns) {
+    findScopesInRules(rawGrammar.patterns, scopeNames);
+  }
+  if (rawGrammar.repository) {
+    findScopesInRules(Object.values(rawGrammar.repository), scopeNames);
+  }
+  return scopeNames;
+}
+
+function findScopesInRules(rules: Iterable<IRawRule>, scopeNames: Set<string>): Set<string> {
+  for (const rule of rules) {
+    findScopesInRule(rule, scopeNames);
+  }
+  return scopeNames;
+}
+
+function findScopesInRule(rule: IRawRule, scopeNames: Set<string>) {
+  if (rule.include) {
+    const [scopeName,] = rule.include.split('#');
+    if (scopeName) {
+      scopeNames.add(scopeName);
+    }
+  }
+  if (rule.beginCaptures) {
+    findScopesInRules(Object.values(rule.beginCaptures), scopeNames);
+  }
+  if (rule.captures) {
+    findScopesInRules(Object.values(rule.captures), scopeNames);
+  }
+  if (rule.endCaptures) {
+    findScopesInRules(Object.values(rule.endCaptures), scopeNames);
+  }
+  if (rule.whileCaptures) {
+    findScopesInRules(Object.values(rule.whileCaptures), scopeNames);
+  }
+  if (rule.patterns) {
+    findScopesInRules(rule.patterns, scopeNames);
+  }
+  if (rule.repository) {
+    findScopesInRules(Object.values(rule.repository), scopeNames);
   }
 }
 
@@ -332,7 +398,7 @@ function bridgeGrammarContribution(contribution: ExtensionGrammar): Pick<Languag
   return {
     scopeName: contribution.scopeName,
     embeddedLangs: [],
-    embeddedLangsLazy: bridgeEmbeddedLanguages(contribution.language!, contribution.embeddedLanguages),
+    embeddedLangsLazy: bridgeEmbeddedLanguages(contribution.language, contribution.embeddedLanguages),
     injectTo: contribution.injectTo,
     // Very unclearwhat these are exactly and why the names vary, but they seem to be about the same concept
     // see: https://code.visualstudio.com/updates/v1_67#_textmate-grammars-can-mark-tokens-as-unbalanced
@@ -341,15 +407,17 @@ function bridgeGrammarContribution(contribution: ExtensionGrammar): Pick<Languag
   };
 }
 
-function bridgeEmbeddedLanguages(languageId: string, embeddedLanguages?: Record<string, string>): string[] {
+function bridgeEmbeddedLanguages(languageId?: string, embeddedLanguages?: Record<string, string>): string[] {
   if (!embeddedLanguages) {
     return [];
   }
   const languages = Object.values(embeddedLanguages);
   const unique = new Set(languages);
-  // NOTE: some grammars have its language id also set as part of embedded languages (why?)
+  // NOTE: some grammars have its language id also set as part of embedded languages
   //       to prevent infinite recursion in shiki, we remove it from its aliases
-  unique.delete(languageId);
+  if (languageId) {
+    unique.delete(languageId);
+  }
   return [...unique];
 }
 

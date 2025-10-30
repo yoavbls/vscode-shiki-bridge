@@ -1,7 +1,6 @@
 import * as vscode from "vscode";
 import { showShikiPreview } from "./preview.js";
-import { inspectInternals } from "./inspect-internals.js";
-import { textDocumentContentProvider } from "./text-document-content-provider.js";
+import { inspectInternals, textDocumentContentProvider } from "./inspect-internals.js";
 
 /**
  * This is a more advanced example used to test the `vscode-shiki-bridge` library
@@ -14,11 +13,11 @@ export function activate(context: vscode.ExtensionContext) {
       showShikiPreview,
     ),
     vscode.commands.registerCommand(
-      "vscode-shiki-bridge-example.extension.inspectInternals",
+      "vscode-shiki-bridge-example-extension.inspectInternals",
       inspectInternals,
     ),
     vscode.workspace.registerTextDocumentContentProvider(
-      'vscode-shiki-bridge',
+      textDocumentContentProvider.scheme,
       textDocumentContentProvider,
     )
   );
