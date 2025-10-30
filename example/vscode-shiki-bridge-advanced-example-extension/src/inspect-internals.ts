@@ -56,7 +56,7 @@ const actions = {
 export const textDocumentContentProvider: TextDocumentContentProvider & { scheme: string } = {
   scheme: "vscode-shiki-bridge",
   async provideTextDocumentContent(uri, token) {
-    const [, type, path] = uri.path.split('/', 3);
+    const [type, path] = uri.path.split('/', 2);
     switch (type) {
       case 'inspect-language-registration': {
         return getLanguageRegistrationTextDocumentContent(path);

@@ -174,23 +174,28 @@ export class LanguageRegistrationCollectionBuilder {
       }
     }
 
-    // TODO: figure this out
-    // const scopeNames = findScopesInRawGrammar(rawGrammar);
-    // for (const scopeName of scopeNames) {
-    //   const grammars = registry.getScopeContributions(scopeName);
-    //   for (const grammar of grammars) {
-    //     const uri = registry.getUri(grammar);
-    //     const rawGrammar = await fileReader.readJson<IRawGrammar>(uri, grammar.path);
-    //     const languageRegistration = buildLanguageRegistration({
-    //       grammar,
-    //       language,
-    //       languageConfiguration,
-    //       rawGrammar,
-    //       aliases,
-    //     });
-    //     results.push(languageRegistration);
-    //   }
-    // }
+    // TODO: clean this up
+    const scopeNames = results.reduce((scopeNames, registration) => {
+      findScopesInRawGrammar(registration, scopeNames);
+      return scopeNames;
+    }, new Set<string>());
+    for (const scopeName of scopeNames) {
+      const grammars = registry.getScopeContributions(scopeName);
+      for (const grammar of grammars) {
+        const uri = registry.getUri(grammar);
+        const rawGrammar = await fileReader.readJson<IRawGrammar>(uri, grammar.path);
+        const languageRegistration = buildLanguageRegistration({
+          grammar,
+          language: {
+            id: scopeName,
+          },
+          languageConfiguration: {},
+          rawGrammar,
+          aliases: [],
+        });
+        results.push(languageRegistration);
+      }
+    }
 
     // TODO: we have to handle language ids without contributions:
     //         - remove them from any `embeddedLangs`
@@ -229,7 +234,7 @@ function findScopesInRules(rules: Iterable<IRawRule>, scopeNames: Set<string>): 
 function findScopesInRule(rule: IRawRule, scopeNames: Set<string>) {
   if (rule.include) {
     const [scopeName,] = rule.include.split('#');
-    if (scopeName) {
+    if (scopeName && scopeName !== '$self') {
       scopeNames.add(scopeName);
     }
   }
