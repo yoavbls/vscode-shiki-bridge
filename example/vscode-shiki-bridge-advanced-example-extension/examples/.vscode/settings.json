@@ -1,3 +1,7 @@
 {
-    "explorer.fileNesting.enabled": false
+    "explorer.fileNesting.enabled": false,
+    // Alternative file extension to language mappings can be enabled here, to make it easy to show highlighting for a specific language without being limited by the filename
+    "files.associations": {
+        "*.ssh_config": "ssh_config"
+    }
 }

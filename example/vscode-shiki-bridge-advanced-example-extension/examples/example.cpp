@@ -1,17 +1,21 @@
-#include <iostream>
+// Working of implicit type-conversion
 
-int main()
-{
-    for (int i = 1; i <= 100; i++)
-    {
-        if (i % 15 == 0)
-            std::cout << "FizzBuzz\n";
-        else if (i % 5 == 0)
-            std::cout << "Buzz\n";
-        else if (i % 3 == 0)
-            std::cout << "Fizz\n";
-        else
-            std::cout << i << "\n";
-    }
-    return 0;
+#include <iostream>
+using namespace std;
+
+int main() {
+
+   int num_int;
+   double num_double = 9.99;
+
+   // implicit conversion
+   // assigning a double value to an int variable
+   num_int = num_double;
+
+   cout << "num_int = " << num_int << endl;
+   cout << "num_double = " << num_double << endl;
+
+   return 0;
 }
+
+// From https://www.programiz.com/cpp-programming/type-conversion

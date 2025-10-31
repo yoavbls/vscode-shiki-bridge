@@ -1,9 +1,30 @@
-for i in [1..100]
-    if i % 15 is 0
-      console.log "FizzBuzz"
-    else if i % 3 is 0
-      console.log "Fizz"
-    else if i % 5 is 0
-      console.log "Buzz"
-    else
-      console.log i
+# Assignment:
+number   = 42
+opposite = true
+
+# Conditions:
+number = -42 if opposite
+
+# Functions:
+square = (x) -> x * x
+
+# Arrays:
+list = [1, 2, 3, 4, 5]
+
+# Objects:
+math =
+  root:   Math.sqrt
+  square: square
+  cube:   (x) -> x * square x
+
+# Splats:
+race = (winner, runners...) ->
+  print winner, runners
+
+# Existence:
+alert "I knew it!" if elvis?
+
+# Array comprehensions:
+cubes = (math.cube num for num in list)
+
+# From https://coffeescript.org/#overview
