@@ -1,0 +1,10 @@
+{
+    "folders": [
+        {
+            "path": ".."
+        },
+        {
+            "path": "../example/vscode-shiki-bridge-advanced-example-extension/examples"
+        }
+    ],
+}
