@@ -2,7 +2,7 @@ import type { ExtensionGrammer as ExtensionGrammar, ExtensionLanguage, Extension
 import type { Extension, Uri } from "vscode";
 import { logger } from "./logger.js";
 
-export class Registry {
+export class LanguageRegistry {
   /**
    * Map of `languageId` to its aliases.
    */
@@ -112,8 +112,8 @@ export class Registry {
     return [...this.aliases.get(languageId) ?? []];
   }
 
-  static build(extensions: readonly Extension<unknown>[]): Registry {
-    const registry = new Registry();
+  static build(extensions: readonly Extension<unknown>[]): LanguageRegistry {
+    const registry = new LanguageRegistry();
     for (const extension of extensions) {
       const manifest = extension.packageJSON as ExtensionManifest;
       const contributes = manifest.contributes;

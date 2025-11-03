@@ -3,7 +3,7 @@ import type { IRawGrammar } from "shiki/textmate";
 import type { LanguageConfiguration } from "vscode";
 import type { ExtensionGrammer as ExtensionGrammar, ExtensionLanguage } from "vscode-extension-manifest";
 
-import type { Registry } from "./registry.js";
+import type { LanguageRegistry } from "./language-registry.js";
 import type { ExtensionFileReader } from "./vscode-utils.js";
 import { logger } from './logger.js';
 import { parse } from "jsonc-parser";
@@ -39,7 +39,7 @@ function hasConfiguration(language: ExtensionLanguage): language is ExtensionLan
 }
 
 export class LanguageRegistrationCollectionBuilder {
-  constructor(readonly registry: Registry, readonly fileReader: ExtensionFileReader) {}
+  constructor(readonly registry: LanguageRegistry, readonly fileReader: ExtensionFileReader) {}
 
   /**
    * Fetch the `language-configuration.json` files for the given `languages` contributions
@@ -87,7 +87,7 @@ export class LanguageRegistrationCollectionBuilder {
    *   - for each grammar (grammars are always scoped), build a language registration merge the contributions and the grammar
    * - find any embedded languages, and recursively add those to the result
    */
-  static async build(languageIds: string[], registry: Registry, fileReader: ExtensionFileReader): Promise<LanguageRegistrationExtended[]> {
+  static async build(languageIds: string[], registry: LanguageRegistry, fileReader: ExtensionFileReader): Promise<LanguageRegistrationExtended[]> {
     // make a copy of the array, so we don't modify the original
     languageIds = [...languageIds];
     const builder = new LanguageRegistrationCollectionBuilder(registry, fileReader);

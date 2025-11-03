@@ -4,18 +4,18 @@
 As per the [Shiki](https://shiki.style/guide/) documentation itself:
 > Shiki (式, a Japanese word for "Style") is a beautiful and powerful syntax highlighter based on TextMate grammar and themes, the same engine as VS Code's syntax highlighting. Provides very accurate and fast syntax highlighting for almost any mainstream programming language.
 
-VS Code uses [TextMate grammars](https://macromates.com/manual/en/language_grammars) in the the [Oniguruma]() dialect and uses its engine:
+VS Code uses [TextMate grammars](https://macromates.com/manual/en/language_grammars) in the the [Oniguruma]() dialect and wraps its engine (written in C) with:
 - [`vscode-oniguruma`](https://github.com/microsoft/vscode-oniguruma)
 - [`vscode-textmate`](https://github.com/microsoft/vscode-textmate)
 
-Shiki has packages (wrapper and a fork) to enable the same backend to power the highlighting Shiki provides:
-- [`@shikijs/engine-oniguruma`](https://github.com/shikijs/shiki/tree/main/packages/engine-oniguruma)
-- [`@shikijs/vscode-textmate`](https://github.com/shikijs/vscode-textmate)
+Shiki has its own packages to harness this backend to implement the highlighter API Shiki provides:
+- [`@shikijs/engine-oniguruma`](https://github.com/shikijs/shiki/tree/main/packages/engine-oniguruma) (wrapper of `vscode-oniguruma`)
+- [`@shikijs/vscode-textmate`](https://github.com/shikijs/vscode-textmate) (fork of `vscode-textmate`)
 
 This is what allows for the grammars and themes powering [VS Code syntax highlighting](https://code.visualstudio.com/api/language-extensions/syntax-highlight-guide) also to power highlighting with Shiki.
 
 ### The gap in between
-This sounds all nice and well, but in practice there is still a gap to bridge to take the TextMate grammars from VS Code extensions and plug them into the Custom [Theme](https://shiki.style/guide/load-theme) and [Language](https://shiki.style/guide/load-lang) API of Shiki.
+This means there is a lot of overlap, but in practice there is still a gap to bridge to take the TextMate grammars from VS Code extensions and plug them into the Custom [Theme](https://shiki.style/guide/load-theme) and [Language](https://shiki.style/guide/load-lang) API of Shiki.
 
 #### Shiki
 
@@ -25,27 +25,41 @@ Shiki does use the same grammar files, and even collects and provides a collecti
 
 But as seen in the the custom [Theme](https://shiki.style/guide/load-theme) and [Language](https://shiki.style/guide/load-lang) API of Shiki, these are provided as singular objects that define the whole theme or grammar.
 
-Languages can use embedded languages and scopes to depend on other grammars, but in general every theme and language is defined as a monolithic entity depending on other monolithic entities.
+Themes are straightforward, but languages can use embedded languages to depend on other grammars. Every theme and language bundled in Shiki is defined in a single configuration object.
+The caller of the Shiki API is responsible for making sure embedded languages are loaded, which makes loading non-bundled grammars for languages that have embedded languages a bit more complicated.
 
 #### VS Code
 
-VS Code uses the [language](), [grammars]()  and [themes]() contribution points in the [extension manifest]() to allow (builtin) extensions to define or augment grammars and themes.
+VS Code uses the [`languages`](https://code.visualstudio.com/api/references/contribution-points#contributes.languages), [`grammars`](https://code.visualstudio.com/api/references/contribution-points#contributes.grammars)  and [`themes`](https://code.visualstudio.com/api/references/contribution-points#contributes.themes) contribution points in the [extension manifest](https://code.visualstudio.com/api/references/extension-manifest) to allow (built-in) extensions to define or augment grammars and themes.
 This dynamic nature allows for new extensions to provide extra functionality on top of what other extensions already provide.
 
-This can somethimes be as simple as defining that certain filenames or extensions should be linked to a certain language id, to enable the correct highlighting for those types of files.
+Sometimes an extension keeps it simple with accociating certain filenames or file extensions with a language id, to enable the correct highlighting for those files.
 
-Other extensions will contribute more complex features like defining custom languages, embedded languages and adding new theme colors.
+Other extensions will contribute more complex features like defining custom languages, embedded grammars, scope injection and adding new theme colors.
 
-This is great for a extension like architecture that VS Code uses, but this is where the gap lies between reading the grammar and themes from VS Code and passing them on to Shiki. The grammars and metadata from VS Code extensions spread out over different extensions as to be bundled back to singular objects that can be passed to the Shiki API. This is where `vscode-shiki-bridge` comes in to bridge that gap.
+Themes for VS Code also have a few features which introduce complexity. Both features are not documented on the [docs](https://code.visualstudio.com/api/language-extensions/syntax-highlight-guide#theming), and will be explained [below](#bridging-the-gap).
+
+This is great for a extension/plugin like architecture that VS Code uses, but also introduces where the gap lies between reading the grammar and themes from VS Code and passing them on to Shiki. The grammars and metadata from VS Code extensions are spread out over different extensions and have to resolved into a single interface that can be passed to the Shiki API. This is where `vscode-shiki-bridge` implements a bridge to cross that gap.
 
 ### Bridging the gap
+Because of the plugable architecture VS Code uses, all extensions need to be checked for their contributions to `languages`, `grammars` and `themes`.
+For both grammars and themes a registry is built to allow for resolving the dynamic nature of these contributions.
+With this registry `vscode-shiki-bridge` is able to resolve any dependencies and will transform everything needed into the interfaces Shiki expects.
+Because Shiki requires the the caller to ensure embedded languages are also registered calling `getUserLangs(['<language>'])`, might return more language registrations. Both embedded languages and grammars that define a scope, but not a language ('orphaned' scopes in this doc) will be returned as a unique language registration that can be passed to Shiki.
 
-- explain how `vscode-shiki-bridge` bridges the gap
-- explain the discovery phase
-- explain the registry
+#### Grammars
 - explain the 'orphaned' scopes part
-- explain the API given to the consumer of `vscode-shiki-bridge`
 - explain the reading of `tmLanguage[.json]` files from various formats
+
+#### Themes
+
+A theme configuration file can have an `include` property, which is a relative file path to another theme configuration file. This functions as a crude version of inheritance.
+This feature is used in some of the default themes of the built-in [`theme-defaults`](https://github.com/microsoft/vscode/tree/main/extensions/theme-defaults/themes) extension of VS Code. Besides the `theme-defaults` there are several more [built-in extensions](https://github.com/microsoft/vscode/tree/main/extensions) (prefixed with `theme-`) that define one or more themes a user can use.
+
+Another property that is similar is the `tokenColors` (aliased to the `settings` property in Shiki themes). This can either be the token color definitions, or a string, which would make it a relative file path to another file which defines the `tokenColors`.
+
+> NOTE: this is only described in the `vscode://schemas/color-theme.json` file, but does not seem to be used by any built-in theme.
+
 
 ## Architecture
 - internals

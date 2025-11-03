@@ -2,7 +2,7 @@ import type { LanguageRegistration } from "shiki/types";
 import { LanguageRegistrationCollectionBuilder, type LanguageRegistrationExtended } from "./shiki-bridge-language.js";
 
 import { ExtensionFileReader, getVscode } from "./vscode-utils.js";
-import { Registry } from "./registry.js";
+import { LanguageRegistry } from "./language-registry.js";
 
 interface UserLangsResult {
   /**
@@ -58,7 +58,7 @@ interface UserLangsResult {
  */
 export async function getUserLangs(languageIds?: string[]): Promise<UserLangsResult> {
   const vscode = getVscode();
-  const registry = Registry.build(vscode.extensions.all);
+  const registry = LanguageRegistry.build(vscode.extensions.all);
   const fileReader = new ExtensionFileReader(vscode);
 
   const registeredLanguageIds = registry.getLanguageIds();

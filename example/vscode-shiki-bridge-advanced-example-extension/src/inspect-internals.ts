@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 import type { TextDocumentContentProvider } from "vscode";
 import { getUserLangs as _getUserLangs } from "vscode-shiki-bridge";
-import { ExtensionFileReader, Registry } from 'vscode-shiki-bridge/internals';
+import { ExtensionFileReader, LanguageRegistry } from 'vscode-shiki-bridge/internals';
 
 function replacer(key: string, value: unknown) {
   if (value instanceof Map) {
@@ -43,11 +43,11 @@ function lazy<T>(getter: () => NonNullable<T>) {
 
 const fileReader = new ExtensionFileReader(vscode);
 const getUserLangs = lazy(() => _getUserLangs());
-const getRegistry = lazy(() => Registry.build(vscode.extensions.all));
+const getRegistry = lazy(() => LanguageRegistry.build(vscode.extensions.all));
 
 const actions = {
   'Inspect Language Registration': inspectLanguageRegistration,
-  'Inspect Registry': inspectRegistry,
+  'Inspect Language Registry': inspectLanguageRegistry,
   'Inspect Language Contributions': inspectLanguageContributions,
   'Inspect Grammar Contributions': inspectGrammarContributions,
   'Inspect Scope Contributions': inspectScopeContributions,
@@ -61,7 +61,7 @@ export const textDocumentContentProvider: TextDocumentContentProvider & { scheme
       case 'inspect-language-registration': {
         return getLanguageRegistrationTextDocumentContent(path);
       }
-      case 'inspect-registry': {
+      case 'inspect-language-registry': {
         return getRegistryTextDocumentContent();
       }
       case 'inspect-language-contributions': {
@@ -119,8 +119,8 @@ export async function getLanguageRegistrationTextDocumentContent(path: string): 
   return text;
 }
 
-async function inspectRegistry() {
-  const uri = vscode.Uri.from({ path: `inspect-registry/registry.json`, scheme: textDocumentContentProvider.scheme });
+async function inspectLanguageRegistry() {
+  const uri = vscode.Uri.from({ path: `inspect-language-registry/registry.json`, scheme: textDocumentContentProvider.scheme });
   await vscode.window.showTextDocument(uri);
 }
 
