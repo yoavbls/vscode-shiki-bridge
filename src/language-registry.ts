@@ -25,15 +25,16 @@ export class LanguageRegistry {
   readonly uris: Map<ExtensionGrammar | ExtensionLanguage, Uri> = new Map();
   /**
    * Map of `scopeName` to its extension manifest grammar contribution
-   * These are plural because multiple extensions can contribute to the same language id.
+   * These are plural because multiple extensions can contribute to the same `scopeName`.
    * Some extensions contribute a grammar without a `language` property, these are considered `orphaned` by vscode-shiki-bridge.
-   * An example is the `text.html.basic`
-   * Shiki requires `LanguageRegistration` to have a `language` property, so
+   * An example is the [`text.html.basic`](https://github.com/microsoft/vscode/blob/main/extensions/html/package.json).
+   * Shiki requires `LanguageRegistration` to have a `language` property, so orphaned scopes are registered as a language under their `scopeName`.
    */
   readonly orphanedScopes: Map<string, ExtensionGrammar[]> = new Map();
 
   registerLanguageContribution(language: ExtensionLanguage, uri: Uri) {
     if (!language.id) {
+      logger.debug(`tried to register a language contribution without id: ${uri.toString(true)}`, language, uri);
       return;
     }
     let aliases = this.aliases.get(language.id);
@@ -56,7 +57,7 @@ export class LanguageRegistry {
   }
 
   resolveAliasToLanguageId(alias: string): string {
-    if (this.aliases.get(alias)) {
+    if (this.aliases.has(alias)) {
       return alias;
     }
     for (const [languageId, aliases] of this.aliases.entries()) {
@@ -93,6 +94,9 @@ export class LanguageRegistry {
       this.orphanedScopes.set(grammar.scopeName, scopes);
     }
     scopes.push(grammar);
+    if (scopes.length > 1) {
+      logger.debug(`orphan scope '${grammar.scopeName}' has multiple (${scopes.length}) grammars`);
+    }
     this.uris.set(grammar, uri);
   }
 
@@ -129,7 +133,7 @@ export class LanguageRegistry {
       }
 
       if (contributes.grammars) {
-        for (const grammar of contributes.grammars ?? []) {
+        for (const grammar of contributes.grammars) {
           if (hasLanguage(grammar)) {
             registry.registerGrammarContribution(grammar, extension.extensionUri);
           } else {
@@ -139,6 +143,7 @@ export class LanguageRegistry {
         }
       }
     }
+
     return registry;
   }
 }

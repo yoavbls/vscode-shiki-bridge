@@ -1,13 +1,13 @@
 import * as vscode from "vscode";
 import type { TextDocumentContentProvider } from "vscode";
-import { getUserLangs as _getUserLangs } from "vscode-shiki-bridge";
-import { ExtensionFileReader, LanguageRegistry } from 'vscode-shiki-bridge/internals';
+import { getUserLangs, getUserTheme } from "vscode-shiki-bridge";
+import { buildThemeRegistration, ExtensionFileReader, LanguageRegistry, ThemeRegistry } from 'vscode-shiki-bridge/internals';
 
 function replacer(key: string, value: unknown) {
   if (value instanceof Map) {
     return [...value.entries()].reduce((record, [key, value]) => {
       if (typeof key === 'object' && key !== null) {
-        // detect ExtensionLanguage or ExtensionGrammar as key
+        // detect ExtensionLanguage, ExtensionGrammar or ExtensionTheme contributions as key
         if ((typeof key['id'] === 'string') || typeof key['scopeName'] === 'string' && typeof key['path'] === 'string') {
           if (value instanceof vscode.Uri) {
             const extension = value.path.slice(value.path.lastIndexOf('/') + 1);
@@ -19,7 +19,7 @@ function replacer(key: string, value: unknown) {
       return record;
     }, {} as Record<string, unknown>);
   } else if (value instanceof Set) {
-    return [...value.entries()];
+    return [...value.values()];
   } else if (value instanceof vscode.Uri) {
     return value.toString(true);
   }  else {
@@ -42,8 +42,8 @@ function lazy<T>(getter: () => NonNullable<T>) {
 }
 
 const fileReader = new ExtensionFileReader(vscode);
-const getUserLangs = lazy(() => _getUserLangs());
-const getRegistry = lazy(() => LanguageRegistry.build(vscode.extensions.all));
+const getLanguageRegistry = lazy(() => LanguageRegistry.build(vscode.extensions.all));
+const getThemeRegistry = lazy(() => ThemeRegistry.build(vscode.extensions.all));
 
 const actions = {
   'Inspect Language Registration': inspectLanguageRegistration,
@@ -51,6 +51,10 @@ const actions = {
   'Inspect Language Contributions': inspectLanguageContributions,
   'Inspect Grammar Contributions': inspectGrammarContributions,
   'Inspect Scope Contributions': inspectScopeContributions,
+  'Inspect Theme Registry': inspectThemeRegistry,
+  'Inspect Theme Contribution': inspectThemeContribution,
+  'Inspect Theme Registration': inspectThemeRegistration,
+  'Inspect User Theme': inspectUserTheme,
 } as const;
 
 export const textDocumentContentProvider: TextDocumentContentProvider & { scheme: string } = {
@@ -72,6 +76,18 @@ export const textDocumentContentProvider: TextDocumentContentProvider & { scheme
       }
       case 'inspect-scope-contributions': {
         return getScopeContributionsTextDocumentContent(path);
+      }
+      case 'inspect-theme-registry': {
+        return getThemeRegistryTextDocumentContent();
+      }
+      case 'inspect-theme-contributions': {
+        return getThemeContributionTextDocumentContent(path);
+      }
+      case 'inspect-theme-registrations': {
+        return getThemeRegistrationTextDocumentContent(path);
+      }
+      case 'inspect-user-theme': {
+        return getUserThemeTextDocumentContent();
       }
       default: {
         return;
@@ -106,7 +122,7 @@ async function inspectLanguageRegistration() {
   await vscode.window.showTextDocument(uri);
 }
 
-export async function getLanguageRegistrationTextDocumentContent(path: string): Promise<string> {
+async function getLanguageRegistrationTextDocumentContent(path: string): Promise<string> {
   const languageId = path.replace('.json', '');
   const result = await getUserLangs();
   const language = result.get(languageId);
@@ -124,8 +140,8 @@ async function inspectLanguageRegistry() {
   await vscode.window.showTextDocument(uri);
 }
 
-export async function getRegistryTextDocumentContent() {
-  const registry = getRegistry();
+async function getRegistryTextDocumentContent() {
+  const registry = getLanguageRegistry();
   const text = stringify(registry);
   return text;
 }
@@ -144,9 +160,9 @@ async function inspectLanguageContributions() {
   await vscode.window.showTextDocument(uri);
 }
 
-export async function getLanguageContributionsTextDocumentContent(path: string) {
+async function getLanguageContributionsTextDocumentContent(path: string) {
   const languageId = path.replace('.json', '');
-  const registry = getRegistry();
+  const registry = getLanguageRegistry();
   const languages = await Promise.all(registry.getLanguageContributions(languageId).map(async language => {
     const copy = {
       ...language,
@@ -174,9 +190,9 @@ async function inspectGrammarContributions() {
   await vscode.window.showTextDocument(uri);
 }
 
-export async function getGrammarContributionsTextDocumentContent(path: string) {
+async function getGrammarContributionsTextDocumentContent(path: string) {
   const languageId = path.replace('.json', '');
-  const registry = getRegistry();
+  const registry = getLanguageRegistry();
   const grammars = await Promise.all(registry.getGrammarContributions(languageId).map(async grammar => {
     const copy = {
       ...grammar,
@@ -192,7 +208,7 @@ export async function getGrammarContributionsTextDocumentContent(path: string) {
 
 
 async function inspectScopeContributions() {
-  const registry = getRegistry();
+  const registry = getLanguageRegistry();
   const scopes = [...registry.orphanedScopes.keys()];
   const scope = await vscode.window.showQuickPick(scopes, {
     ignoreFocusOut: true,
@@ -206,9 +222,9 @@ async function inspectScopeContributions() {
   await vscode.window.showTextDocument(uri);
 }
 
-export async function getScopeContributionsTextDocumentContent(path: string) {
+async function getScopeContributionsTextDocumentContent(path: string) {
   const scopeName = path.replace(/\.json$/, '');
-  const registry = getRegistry();
+  const registry = getLanguageRegistry();
   const grammars = await Promise.all(registry.getScopeContributions(scopeName).map(async grammar => {
     const copy = {
       ...grammar,
@@ -219,5 +235,86 @@ export async function getScopeContributionsTextDocumentContent(path: string) {
     return copy;
   }));
   const text = stringify(grammars);
+  return text;
+}
+
+async function inspectThemeRegistry() {
+  const uri = vscode.Uri.from({ path: `inspect-theme-registry/registry.json`, scheme: textDocumentContentProvider.scheme });
+  await vscode.window.showTextDocument(uri);
+}
+
+async function getThemeRegistryTextDocumentContent() {
+  const registry = getThemeRegistry();
+  const text = stringify(registry);
+  return text;
+}
+
+async function inspectThemeContribution() {
+  const registry = getThemeRegistry();
+  const themes = [...registry.themes.keys()];
+  const theme = await vscode.window.showQuickPick(themes, {
+    ignoreFocusOut: true,
+    placeHolder: 'Choose a Theme',
+    title: "Inspect Theme Contributions",
+  });
+  if (!theme) {
+    return;
+  }
+  const uri = vscode.Uri.from({ path: `inspect-theme-contributions/${theme}.json`, scheme: textDocumentContentProvider.scheme });
+  await vscode.window.showTextDocument(uri);
+}
+
+async function getThemeContributionTextDocumentContent(path: string) {
+  const themeId = path.replace('.json', '');
+  const registry = getThemeRegistry();
+  const theme = registry.themes.get(themeId)!;
+  const copy = {
+    ...theme,
+  };
+  if (copy.path) {
+    copy.path = await fileReader.readTmLanguage(registry.getUri(theme), copy.path);
+  }
+  const text = stringify(copy);
+  return text;
+}
+
+async function inspectThemeRegistration() {
+  const registry = getThemeRegistry();
+  const themes = [...registry.labels.entries()];
+  const theme = await vscode.window.showQuickPick(themes.map<vscode.QuickPickItem>(([id, labels]) => {
+    const label = [...labels][0];
+    return {
+      label: label ?? id,
+      description: label ? id : undefined,
+    };
+  }), {
+    ignoreFocusOut: true,
+    placeHolder: 'Choose a Theme',
+    title: "Inspect Theme Registration",
+  });
+  if (!theme) {
+    return;
+  }
+  const uri = vscode.Uri.from({ path: `inspect-theme-registrations/${theme.label}.json`, scheme: textDocumentContentProvider.scheme });
+  await vscode.window.showTextDocument(uri);
+}
+
+async function getThemeRegistrationTextDocumentContent(path: string) {
+  const label = path.replace('.json', '');
+  const registry = getThemeRegistry();
+  const theme = registry.themes.get(registry.resolveLabelToId(label))!;
+  const themeRegistration = await buildThemeRegistration(theme, registry, fileReader, vscode.Uri);
+  const text = stringify(themeRegistration);
+  return text;
+}
+
+async function inspectUserTheme() {
+  const uri = vscode.Uri.from({ path: 'inspect-user-theme/theme.json', scheme: textDocumentContentProvider.scheme });
+  await vscode.window.showTextDocument(uri);
+}
+
+async function getUserThemeTextDocumentContent(): Promise<string> {
+  const [themeId, theme] = await getUserTheme();
+  const text = stringify({ themeId, theme });
   return text;
 }

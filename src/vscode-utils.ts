@@ -29,8 +29,8 @@ export function parseJsonc(jsonc: string) {
 export class ExtensionFileReader {
   constructor(private readonly vscode: typeof import('vscode'), private readonly decoder = new TextDecoder('utf-8')) {}
 
-  async readFile(base: Uri, path: string): Promise<string> {
-    const uri = this.vscode.Uri.joinPath(base, path);
+  async readFile(base: Uri, path?: string): Promise<string> {
+    const uri = path ? this.vscode.Uri.joinPath(base, path) : base;
     const bytes = await this.vscode.workspace.fs.readFile(uri);
     const text = this.decoder.decode(bytes);
     return text;
@@ -43,9 +43,9 @@ export class ExtensionFileReader {
   }
 
   // based on https://github.com/shikijs/textmate-grammars-themes/blob/main/scripts/shared/parse.ts
-  async readTmLanguage<T>(base: Uri, path: string): Promise<T> {
-    const uri = this.vscode.Uri.joinPath(base, path);
-    let raw = await this.readFile(base, path);
+  async readTmLanguage<T>(base: Uri, path?: string): Promise<T> {
+    const uri = path ? this.vscode.Uri.joinPath(base, path) : base;
+    let raw = await this.readFile(uri);
     if (uri.path.endsWith('.cson')) {
       return CSON.parse(raw);
     } else if (uri.path.endsWith('.json')) {

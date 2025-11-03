@@ -1,6 +1,5 @@
-import type { LanguageRegistration } from "shiki/types";
+import type { LanguageRegistration } from "shiki";
 import { LanguageRegistrationCollectionBuilder, type LanguageRegistrationExtended } from "./shiki-bridge-language.js";
-
 import { ExtensionFileReader, getVscode } from "./vscode-utils.js";
 import { LanguageRegistry } from "./language-registry.js";
 
@@ -52,13 +51,25 @@ interface UserLangsResult {
   resolveExtension(extension: string): string;
 }
 
+let cache: LanguageRegistry | null = null;
+function getLanguageRegistry(vscode: typeof import('vscode')): LanguageRegistry {
+  if (!cache) {
+    cache = LanguageRegistry.build(vscode.extensions.all);
+    vscode.extensions.onDidChange(() => {
+      cache = null;
+    });
+  }
+  return cache;
+}
+
+
 /**
  * Collect TextMate grammars contributed by installed VS Code extensions to use with Shiki's highlighter.
  * @param languageIds - If provided, only loads grammars for those specific language IDs.
  */
 export async function getUserLangs(languageIds?: string[]): Promise<UserLangsResult> {
   const vscode = getVscode();
-  const registry = LanguageRegistry.build(vscode.extensions.all);
+  const registry = getLanguageRegistry(vscode);
   const fileReader = new ExtensionFileReader(vscode);
 
   const registeredLanguageIds = registry.getLanguageIds();
@@ -66,7 +77,6 @@ export async function getUserLangs(languageIds?: string[]): Promise<UserLangsRes
   if (!languageIds) {
     languageIds = registeredLanguageIds;
   } else {
-    // TODO: should we normalize to lower case?
     languageIds = languageIds.map(langId => registry
       // resolve any aliases
       .resolveAliasToLanguageId(langId))
@@ -98,7 +108,7 @@ export async function getUserLangs(languageIds?: string[]): Promise<UserLangsRes
           return language.name;
         }
       }
-      // default to `text`
+      // default to `text` as this will never cause Shiki to throw when highlighting
       return 'text';
     }
   } satisfies UserLangsResult;

@@ -45,7 +45,7 @@ This is great for a extension/plugin like architecture that VS Code uses, but al
 Because of the plugable architecture VS Code uses, all extensions need to be checked for their contributions to `languages`, `grammars` and `themes`.
 For both grammars and themes a registry is built to allow for resolving the dynamic nature of these contributions.
 With this registry `vscode-shiki-bridge` is able to resolve any dependencies and will transform everything needed into the interfaces Shiki expects.
-Because Shiki requires the the caller to ensure embedded languages are also registered calling `getUserLangs(['<language>'])`, might return more language registrations. Both embedded languages and grammars that define a scope, but not a language ('orphaned' scopes in this doc) will be returned as a unique language registration that can be passed to Shiki.
+Because Shiki requires the the caller to ensure embedded languages are also registered before using the highlighter, calling `getUserLangs(['<language>'])`, might return more language registrations. Both embedded languages and 'orphaned' scopes that the language requires to be registered will be returned as an unique language registration that can be passed on to Shiki.
 
 #### Grammars
 - explain the 'orphaned' scopes part
@@ -53,13 +53,49 @@ Because Shiki requires the the caller to ensure embedded languages are also regi
 
 #### Themes
 
+A theme contribution can have an `id` and a `label` property, but the typescript types show both as optional, as does the json schema VS Code uses internally.
+The example in the docs, the [extension sample](https://github.com/microsoft/vscode-extension-samples/blob/main/theme-sample) and the [yeoman generator](https://github.com/microsoft/vscode-generator-code) only use `label`.
+The json schema describes the fields as:
+```json
+"id": {
+    "description": "Id of the color theme as used in the user settings.",
+    "type": "string"
+},
+"label": {
+    "description": "Label of the color theme as shown in the UI.",
+    "type": "string"
+},
+```
+
+The menu in VS Code to switch themes uses a `<label> [<id>]` format.
+![alt text](assets/image.png)
+
+All of this leads to the conclusion to use the `id` as an unique identifier and use the `label` as a string to show to the user. Since the occasional theme might only have a `label`, it will also be used as the `id`, if the property is missing.
+If both are missing the theme contribution will be ignored.
+
+Shiki uses the `name` and `displayName?` properties on its `ThemeRegistration` interface, thus `id` and `label` are mapped respectively to its Shiki counter parts.
+
+VS Code themes are required to define a `uiTheme` property which is an enum of the following values:
+- `vs` (light theme)
+- `vs-dark` (dark theme)
+- `hc-black` (high contrast dark theme)
+- `hc-light` (high contrast light theme)
+
+These are mapped to the Shiki property `type` of its `ThemeRegistration` interface like:
+| Shiki | VS Code |
+| --- | --- |
+| `light` | `vs`, `hc-light` |
+| `dark` | `vs-dark`, `hc-black` |
+
 A theme configuration file can have an `include` property, which is a relative file path to another theme configuration file. This functions as a crude version of inheritance.
 This feature is used in some of the default themes of the built-in [`theme-defaults`](https://github.com/microsoft/vscode/tree/main/extensions/theme-defaults/themes) extension of VS Code. Besides the `theme-defaults` there are several more [built-in extensions](https://github.com/microsoft/vscode/tree/main/extensions) (prefixed with `theme-`) that define one or more themes a user can use.
 
-Another property that is similar is the `tokenColors` (aliased to the `settings` property in Shiki themes). This can either be the token color definitions, or a string, which would make it a relative file path to another file which defines the `tokenColors`.
+Another property that can be a relative file path is the `tokenColors` (aliased to the `settings` property in Shiki themes). This can either be the token color definitions, or a string, which would make it a relative file path to another file which defines the `tokenColors`.
 
 > NOTE: this is only described in the `vscode://schemas/color-theme.json` file, but does not seem to be used by any built-in theme.
 
+## API
+- explain API decisions
 
 ## Architecture
 - internals
@@ -68,6 +104,3 @@ Another property that is similar is the `tokenColors` (aliased to the `settings`
 - simple example
 - advanced example
 - vscode interfacing
-
-## API
-- explain API decisions

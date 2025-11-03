@@ -1,5 +1,4 @@
-// The module 'vscode' contains the VS Code extensibility API
-// Import the module and reference it with the alias vscode in your code below
+import type { HighlighterCore } from "shiki";
 import { createHighlighterCore } from "shiki/core";
 import { createOnigurumaEngine } from 'shiki/engine/oniguruma';
 import * as vscode from "vscode";
@@ -17,16 +16,18 @@ async function getHighlighter(): NonNullable<typeof highlighter> {
 }
 
 export async function showShikiPreview() {
+  const disposables: vscode.Disposable[] = [];
+
   await vscode.window.withProgress({
     location: vscode.ProgressLocation.Notification,
     cancellable: false,
     title: 'loading preview...'
   }, async (progress) => {
     // Resolve current VS Code theme JSON (may be `THEME_NOT_FOUND_RESULT` if unavailable)
-    const [theme, themes] = await getUserTheme();
+    const [theme, themeRegistration] = await getUserTheme();
     const result = await getUserLangs();
 
-    console.log({ theme, themes, result });
+    console.log({ themeRegistration, result });
 
     // NOTE: it is recommended to cache this instance and dynammically load themes and languages
     // see: https://shiki.style/guide/bundles#fine-grained-bundle
@@ -34,18 +35,10 @@ export async function showShikiPreview() {
 
     // dynamically load themes that are not loaded yet
     let loadedThemes = highlighter.getLoadedThemes();
-    const unloadedThemes = themes.filter(theme => {
-      if (!theme.name) {
-        return false;
-      }
-      return !loadedThemes.includes(theme.name);
-    });
-    if (unloadedThemes.length > 0) {
-      console.log(`loading themes: `, unloadedThemes);
-      await highlighter.loadTheme(...unloadedThemes);
-      loadedThemes = highlighter.getLoadedThemes();
+    if (!loadedThemes.includes(theme)) {
+      console.log(`loading theme: `, themeRegistration);
+      await highlighter.loadTheme(themeRegistration);
     }
-    console.log(`loaded themes: `, loadedThemes);
 
     // dynamically load languages that are not loaded yet
     let loadedLanguages = highlighter.getLoadedLanguages();
@@ -55,64 +48,41 @@ export async function showShikiPreview() {
       await highlighter.loadLanguage(...unloadedLanguages);
       loadedLanguages = highlighter.getLoadedLanguages();
     }
-    console.log(`loaded languages: `, loadedLanguages);
 
-    // read the open workspace (`./examples/` for this extensions launch configuration)
+    // Ensure we are in a workspace folder
     const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
     if (!workspaceFolder) {
       vscode.window.showErrorMessage('no open workspace folders');
       return;
     }
+    const examples = await fetchExamples(workspaceFolder, result);
 
-    // read all the `example.*` files
-    const entries = await vscode.workspace.fs.readDirectory(workspaceFolder.uri);
-    const examples = await Promise.all(entries
-      .filter(([name, type]) => name.startsWith('example.') && type === vscode.FileType.File)
-      .map(async ([name]) => {
-        const bytes = await vscode.workspace.fs.readFile(vscode.Uri.joinPath(workspaceFolder.uri, name));
-        const contents = new TextDecoder('utf-8').decode(bytes);
-        const extension = name.slice(name.lastIndexOf('.'));
-        return {
-          name,
-          lang: result.resolveExtension(extension),
-          extension,
-          contents,
-        };
-      }));
-
-    const highlighted = examples.map((example) => {
-      try {
-        return {
-          name: example.name,
-          lang: example.lang,
-          highlighted: highlighter.codeToHtml(example.contents, {
-            lang: example.lang,
-            theme,
-          })
-        };
-      } catch (error) {
-        // highlighting failed, return the contents as plain text
-        // see: https://shiki.style/languages#plain-text
-        return {
-          name: example.name,
-          lang: 'text',
-          error,
-          highlighted: highlighter.codeToHtml(example.contents, {
-            lang: 'text',
-            theme,
-          }),
-        };
-      }
-    });
 
     const panel = vscode.window.createWebviewPanel(
       "vscodeShikiBridgeExample",
       "Shiki Preview",
       vscode.ViewColumn.Active,
-      { enableScripts: true, enableFindWidget: true }
+      { enableScripts: true, enableFindWidget: true },
     );
+    panel.webview.html = 'loading preview...';
+    await renderPreview(examples, highlighter, theme, panel);
 
-    panel.webview.html = `<!DOCTYPE html>
+    // TODO: onThemeChange rerender?
+    panel.onDidDispose(() => {
+      disposables.forEach(disposable => disposable.dispose());
+    });
+  });
+};
+
+type Highlighted = ReturnType<typeof highlightExamples>[number];
+
+async function renderPreview(examples: Example[], highlighter: HighlighterCore, theme: string, panel: vscode.WebviewPanel) {
+  const highlighted = highlightExamples(examples, highlighter, theme);
+  panel.webview.html = renderPreviewHtml(highlighted);
+}
+
+function renderPreviewHtml(highlighted: Highlighted[]) {
+  return `<!DOCTYPE html>
   <html lang="en">
     <head>
       <meta charset="UTF-8" />
@@ -217,6 +187,63 @@ export async function showShikiPreview() {
       </script>
     </body>
   </html>`;
+}
 
-  });
-};
+type UserLangsResult = Awaited<ReturnType<typeof getUserLangs>>;
+
+/**
+ * read all the `example.*` files in the current workspace
+ */
+async function fetchExamples(workspaceFolder: vscode.WorkspaceFolder, result: UserLangsResult) {
+  const entries = await vscode.workspace.fs.readDirectory(workspaceFolder.uri);
+  const examples = await Promise.all(entries
+    .filter(([name, type]) => name.startsWith('example.') && type === vscode.FileType.File)
+    .map(async ([name]) => {
+      const bytes = await vscode.workspace.fs.readFile(vscode.Uri.joinPath(workspaceFolder.uri, name));
+      const contents = new TextDecoder('utf-8').decode(bytes);
+      const extension = name.slice(name.lastIndexOf('.'));
+      return {
+        name,
+        lang: result.resolveExtension(extension),
+        extension,
+        contents,
+      };
+    }));
+  return examples;
+}
+
+type Example = { name: string; lang: string; extension: string; contents: string; };
+
+type Highlight = { name: string, lang: string, highlighted: string, error?: string };
+
+/**
+ *
+ */
+function highlightExamples(examples: Example[], highlighter: HighlighterCore, theme: string): Highlight[] {
+  const results: Highlight[] = [];
+  for (const example of examples) {
+    try {
+      results.push({
+        name: example.name,
+        lang: example.lang,
+        highlighted: highlighter.codeToHtml(example.contents, {
+          lang: example.lang,
+          theme,
+        })
+      });
+    } catch (error) {
+      // highlighting failed, return the contents as plain text
+      // see: https://shiki.style/languages#plain-text
+      results.push({
+        name: example.name,
+        lang: 'text',
+        error: error as any,
+        highlighted: highlighter.codeToHtml(example.contents, {
+          lang: 'text',
+          theme,
+        }),
+      });
+    }
+  }
+  return results;
+}
