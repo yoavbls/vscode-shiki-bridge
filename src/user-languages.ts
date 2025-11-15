@@ -55,8 +55,9 @@ let cache: LanguageRegistry | null = null;
 function getLanguageRegistry(vscode: typeof import('vscode')): LanguageRegistry {
   if (!cache) {
     cache = LanguageRegistry.build(vscode.extensions.all);
-    vscode.extensions.onDidChange(() => {
+    const disposable = vscode.extensions.onDidChange(() => {
       cache = null;
+      disposable.dispose();
     });
   }
   return cache;

@@ -10,8 +10,9 @@ let cache: ThemeRegistry | null = null;
 function getThemeRegistry(vscode: typeof import('vscode')): ThemeRegistry {
   if (!cache) {
     cache = ThemeRegistry.build(vscode.extensions.all);
-    vscode.extensions.onDidChange(() => {
+    const disposable = vscode.extensions.onDidChange(() => {
       cache = null;
+      disposable.dispose();
     });
   }
   return cache;
