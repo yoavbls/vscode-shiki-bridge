@@ -20,11 +20,11 @@ export function activate(context: vscode.ExtensionContext) {
     "vscode-shiki-bridge-example-extension.shikiPreview",
     async () => {
       // Resolve current VS Code theme JSON (may be null if unavailable)
-      const [theme, themes] = await getUserTheme();
+      const [theme, themeRegistration] = await getUserTheme();
       const result = await getUserLangs(["graphql", "type"]);
 
       const highlighter = await createHighlighter({
-        themes,
+        themes: [themeRegistration],
         langs: result.langs,
       });
 
