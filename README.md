@@ -18,10 +18,10 @@ npm install vscode-shiki-bridge shiki
 import { createHighlighter } from "shiki";
 import { getUserTheme, getUserLangs } from "vscode-shiki-bridge";
 
-const [theme, themes] = await getUserTheme();
+const [theme, themeRegistration] = await getUserTheme();
 const { langs } = await getUserLangs(["graphql"]);
 // Create Shiki highlighter with the extracted themes and langs
-const highlighter = await createHighlighter({ themes, langs });
+const highlighter = await createHighlighter({ themes: [themeRegistration], langs });
 
 // Highlight GraphQL code with the user's theme
 const html = highlighter.codeToHtml(
