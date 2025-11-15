@@ -14,7 +14,9 @@ export async function buildThemeRegistration(contribution: ExtensionTheme, regis
         return {};
     }
 
-    // Because the `include` property is relative to the file it is in, we need to keep track of the location of the last included grammar.
+    /**
+     * Because the `include` property is relative to the file it is in, we need to keep track of the location of the last included grammar.
+     */
     const rawTheme = await resolveThemeGrammar(contribution, registry, fileReader, Uri);
 
     if (typeof rawTheme.tokenColors === 'string') {
@@ -39,6 +41,12 @@ export async function buildThemeRegistration(contribution: ExtensionTheme, regis
 
 type ThemeMergeResult = Pick<ThemeRegistrationRawWithInclude, 'colors' | 'include' | 'semanticHighlighting' | 'semanticTokenColors' | 'type' | 'tokenColors'>;
 
+/**
+ * Recursively resolves the `include` property of theme grammars.
+ *
+ * NOTE: the `tokenColors` can be a string which would make it a relative file path to another TextMate file
+ *       this does not seem to be used in any theme, but if it does happen we log it and set it to an empty array as Shiki expects it to be an array
+ */
 export async function resolveThemeGrammar(contribution: ExtensionTheme, registry: ThemeRegistry, fileReader: ExtensionFileReader, Uri: typeof import('vscode').Uri) {
   const id = contribution.id ?? contribution.label;
   const uri = registry.getUri(contribution);
@@ -53,6 +61,7 @@ export async function resolveThemeGrammar(contribution: ExtensionTheme, registry
     rawTheme = mergeRawTheme(include, rawTheme) as typeof rawTheme;
     if (typeof rawTheme.tokenColors === 'string') {
       logger.trace(`theme '${id}' with include '${rawTheme.include}' has 'tokenColors' set to a relative file path`, contribution, rawTheme);
+      rawTheme.tokenColors = [];
     }
     hasInclude = typeof rawTheme.include === 'string';
   }
@@ -70,6 +79,13 @@ function mergeRawTheme(include: ThemeRegistrationRawWithInclude, result: ThemeRe
     };
 }
 
+/**
+ * VS Code `uiTheme` -> Shiki `type` mapping:
+ * - `hc-black` -> `dark`
+ * - `vs-dark`  -> `dark`
+ * - `vs`       -> `light`
+ * - `hc-light` -> `light`
+ */
 function bridgeThemeType(uiTheme: ExtensionTheme['uiTheme']): ThemeRegistration['type'] {
   switch (uiTheme) {
     case "hc-black":

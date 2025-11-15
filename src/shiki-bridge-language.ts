@@ -106,6 +106,7 @@ export class LanguageRegistrationCollectionBuilder {
 
     const languageIdsWithoutContributions: string[] = [];
 
+    // the loop might add additional entries to `languageIds` in case of embedded languages
     for (const languageId of languageIds) {
       const languages = registry.getLanguageContributions(languageId);
       const grammars = registry.getGrammarContributions(languageId);
@@ -217,12 +218,11 @@ export class LanguageRegistrationCollectionBuilder {
       }
     }
 
-    // TODO: do we need to handle these?
+    // TODO: do we need to handle these? It seems to work just fine, `vue` has some of these, but does not cause Shiki to throw.
     //       if so we can:
-    //         - remove them from any `embeddedLangs`
-    //         - create empty language registrations for them
-    //         - the one with aliases, can be changed in any `embeddedLangs`
-    //       not resolving this will might make shiki throw an exception if highlighting a language where a embeddedLang is not loaded
+    //         - if its an alias, we can resolve the alias in the `embeddedLangs` properties of languages that depend on it
+    //         - if not, remove them from `embeddedLangs`
+    //         - or create empty language registrations for these "null" languages
     languageIdsWithoutContributions.forEach(languageId => {
       const resolvedLanguageId = registry.resolveAliasToLanguageId(languageId);
       const isAlias = resolvedLanguageId !== languageId;
@@ -385,14 +385,13 @@ function mergeLanguageConfigurations(languageConfigurations: Map<ExtensionLangua
       blockComment: undefined,
       lineComment: undefined,
     },
+    // we use a type assertion, because VS Code types are convinced these are RegExp instances, but when read from disk, these will be strings or undefined.
     indentationRules: {
-      // NOTE: VS Code types see this as `RegExp` instance, but the configuration values will be a string
-      decreaseIndentPattern: undefined as unknown as RegExp,
-      // NOTE: VS Code types see this as `RegExp` instance, but the configuration values will be a string
-      increaseIndentPattern: undefined as unknown as RegExp,
+      decreaseIndentPattern: undefined,
+      increaseIndentPattern: undefined,
       indentNextLinePattern: undefined,
       unIndentedLinePattern: undefined,
-    },
+    } as unknown as LanguageConfiguration['indentationRules'],
     onEnterRules: [],
     wordPattern: undefined,
   };
