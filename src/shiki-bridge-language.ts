@@ -217,19 +217,16 @@ export class LanguageRegistrationCollectionBuilder {
       }
     }
 
-    // TODO: we have to handle language ids without contributions:
+    // TODO: do we need to handle these?
+    //       if so we can:
     //         - remove them from any `embeddedLangs`
     //         - create empty language registrations for them
     //         - the one with aliases, can be changed in any `embeddedLangs`
-    //       not resolving this will make shiki throw if highlighting a language where a embeddedLang is not loaded
+    //       not resolving this will might make shiki throw an exception if highlighting a language where a embeddedLang is not loaded
     languageIdsWithoutContributions.forEach(languageId => {
       const resolvedLanguageId = registry.resolveAliasToLanguageId(languageId);
       const isAlias = resolvedLanguageId !== languageId;
-      if (isAlias) {
-        logger.trace(`language id without contribution: ${languageId}, but is an alias: ${resolvedLanguageId}`);
-      } else {
-        logger.trace(`language id without contribution: ${languageId}, has no alias!`);
-      }
+      logger.trace(`language id without contribution: ${languageId}, ${isAlias ? `but is an alias: ${resolvedLanguageId}` : 'has no alias!'}`);
       const isEmbeddedIn = results.filter(lang => lang.embeddedLangs?.includes(languageId) || lang.embeddedLangsLazy?.includes(languageId));
       if (isEmbeddedIn.length) {
         logger.trace(`  ${languageId} is embedded in the following languages: ${isEmbeddedIn.map(l => l.name).join(', ')}`);
