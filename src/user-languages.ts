@@ -28,8 +28,6 @@ interface UserLangsResult {
    * The language registrations always use the resolved alias as its `name` property.
    * All its aliases can be found under the `aliases` property.
    *
-   * Any
-   *
    * @example
    * ```ts
    * const result = getUserLangs(['tsx']);
