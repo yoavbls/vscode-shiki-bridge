@@ -2,6 +2,9 @@ import type { Extension, Uri } from "vscode";
 import type { ExtensionManifest, ExtensionTheme } from "vscode-extension-manifest";
 import { logger } from "./logger.js";
 
+/**
+ * The `ThemeRegistry` allows `vscode-shiki-bridge` to collect all the theme information from the installed (including built-in) extensions and expose an interface to build the Shiki compatible `ThemeRegistration` objects.
+ */
 export class ThemeRegistry {
   readonly labels: Map<string, Set<string>> = new Map();
   readonly themes: Map<string, ExtensionTheme> = new Map();
@@ -10,12 +13,12 @@ export class ThemeRegistry {
   registerThemeContribution(theme: ExtensionTheme, uri: Uri) {
     const id = theme.id ?? theme.label;
     if (!id) {
-      logger.debug(`tried to register a theme contribution without id: ${uri.toString(true)}`, theme, uri);
+      logger.trace(`tried to register a theme contribution without id: ${uri.toString(true)}`, theme, uri);
       return;
     }
     const cacheHit = this.themes.get(id);
     if (cacheHit) {
-        logger.debug(`tried to register a duplicate theme contribution: ${theme.id}`, theme, uri);
+        logger.trace(`tried to register a duplicate theme contribution: ${theme.id}`, theme, uri);
         return;
     }
 
@@ -28,7 +31,7 @@ export class ThemeRegistry {
       labels.add(theme.label);
     }
     if (labels.size > 1) {
-      logger.debug(`theme '${id}' has multiple labels: ${[...labels.values()].join(', ')}`, theme, labels);
+      logger.trace(`theme '${id}' has multiple labels: ${[...labels.values()].join(', ')}`, theme, labels);
     }
 
     this.themes.set(id, theme);
@@ -55,7 +58,11 @@ export class ThemeRegistry {
     return [...this.labels.get(themeId) ?? []];
   }
 
-  static build(extensions: readonly Extension<unknown>[]) {
+  /**
+   * A static method to help building a `    const registry = new ThemeRegistry();
+` from a collection of `Extension` objects
+   */
+  static build(extensions: readonly Extension<unknown>[]): ThemeRegistry {
     const registry = new ThemeRegistry();
 
     for (const extension of extensions) {

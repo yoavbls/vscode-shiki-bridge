@@ -65,7 +65,7 @@ function getLanguageRegistry(vscode: typeof import('vscode')): LanguageRegistry 
 
 /**
  * Collect TextMate grammars contributed by installed VS Code extensions to use with Shiki's highlighter.
- * @param languageIds - If provided, only loads grammars for those specific language IDs.
+ * @param languageIds If provided, only loads grammars for those specific language IDs.
  */
 export async function getUserLangs(languageIds?: string[]): Promise<UserLangsResult> {
   const vscode = getVscode();

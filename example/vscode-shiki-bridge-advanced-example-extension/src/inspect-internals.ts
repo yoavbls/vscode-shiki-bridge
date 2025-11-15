@@ -3,6 +3,9 @@ import type { TextDocumentContentProvider } from "vscode";
 import { getUserLangs, getUserTheme } from "vscode-shiki-bridge";
 import { buildThemeRegistration, ExtensionFileReader, LanguageRegistry, ThemeRegistry } from 'vscode-shiki-bridge/internals';
 
+/**
+ * Used to serialize Map/Set/Uri values properly
+ */
 function replacer(key: string, value: unknown) {
   if (value instanceof Map) {
     return [...value.entries()].reduce((record, [key, value]) => {
@@ -45,6 +48,9 @@ const fileReader = new ExtensionFileReader(vscode);
 const getLanguageRegistry = lazy(() => LanguageRegistry.build(vscode.extensions.all));
 const getThemeRegistry = lazy(() => ThemeRegistry.build(vscode.extensions.all));
 
+/**
+ * Actions available when running Inspect Internals
+ */
 const actions = {
   'Inspect Language Registration': inspectLanguageRegistration,
   'Inspect Language Registry': inspectLanguageRegistry,
@@ -57,6 +63,9 @@ const actions = {
   'Inspect User Theme': inspectUserTheme,
 } as const;
 
+/**
+ * Map actions to text document providers, these are just wrappers to serialize the internal representations of themes/grammars to a readonly JSON editor.
+ */
 export const textDocumentContentProvider: TextDocumentContentProvider & { scheme: string } = {
   scheme: "vscode-shiki-bridge",
   async provideTextDocumentContent(uri, token) {

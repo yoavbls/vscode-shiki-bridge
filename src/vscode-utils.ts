@@ -21,11 +21,15 @@ export function parseJsonc(jsonc: string) {
     allowEmptyContent: true,
     allowTrailingComma: true,
   });
-  if (errors.length)
+  if (errors.length) {
     throw new AggregateError(errors, 'failed to parse JSONC');
+  }
   return result;
 }
 
+/**
+ * A helper class to read files from extension directories. Uses a `jsonc` parser to parse JSON.
+ */
 export class ExtensionFileReader {
   constructor(private readonly vscode: typeof import('vscode'), private readonly decoder = new TextDecoder('utf-8')) {}
 
@@ -42,7 +46,13 @@ export class ExtensionFileReader {
     return json as T;
   }
 
-  // based on https://github.com/shikijs/textmate-grammars-themes/blob/main/scripts/shared/parse.ts
+  /**
+   * TextMate grammar/language files can be written in JSON, CSON, YAML or XML Plist formats.
+   *
+   * If the extension does not make it clear, we probe the first character to attempt to parse it correctly.
+   *
+   * based on https://github.com/shikijs/textmate-grammars-themes/blob/main/scripts/shared/parse.ts
+   */
   async readTmLanguage<T>(base: Uri, path?: string): Promise<T> {
     const uri = path ? this.vscode.Uri.joinPath(base, path) : base;
     let raw = await this.readFile(uri);

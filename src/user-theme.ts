@@ -17,23 +17,37 @@ function getThemeRegistry(vscode: typeof import('vscode')): ThemeRegistry {
   return cache;
 }
 
+/**
+ * Get the `ThemeRegistration` for the currently active theme.
+ */
 export async function getUserTheme(): Promise<UserThemeResult> {
   const vscode = getVscode();
-  const registry = getThemeRegistry(vscode);
-  const fileReader = new ExtensionFileReader(vscode);
-
   const workbenchConfig = vscode.workspace.getConfiguration("workbench");
   const themeName = workbenchConfig.get<string>("colorTheme");
 
   if (!themeName) {
-    logger.debug('no theme name found under workbench.colorTheme');
+    logger.trace('no theme name found under workbench.colorTheme');
     return THEME_NOT_FOUND_RESULT;
   }
+
+  return await getTheme(themeName);
+}
+
+/**
+ * Get the `ThemeRegistration` for the given `themeName`.
+ *
+ * The `themeName` can be a theme's `label` or `id`, themes might define only one of these properties, `vscode-shiki-bridge` accepts both and will resolve it to the correct theme.
+ * @param themeName
+ */
+export async function getTheme(themeName: string): Promise<UserThemeResult> {
+  const vscode = getVscode();
+  const registry = getThemeRegistry(vscode);
+  const fileReader = new ExtensionFileReader(vscode);
 
   const themeId = registry.resolveLabelToId(themeName);
   const contribution = registry.themes.get(themeId);
   if (!contribution) {
-    logger.debug(`no theme contribution found for theme id ${themeId}`);
+    logger.trace(`no theme contribution found for theme id ${themeId}`);
     return THEME_NOT_FOUND_RESULT;
   }
 

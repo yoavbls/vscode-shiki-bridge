@@ -1,3 +1,4 @@
+// These are internals, exposed to enable the advanced example to implement the inspect-internals commands
 
 export { LanguageRegistry } from './language-registry.js';
 export { LanguageRegistrationCollectionBuilder } from './shiki-bridge-language.js';

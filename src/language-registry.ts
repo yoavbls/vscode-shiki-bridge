@@ -2,6 +2,9 @@ import type { ExtensionGrammer as ExtensionGrammar, ExtensionLanguage, Extension
 import type { Extension, Uri } from "vscode";
 import { logger } from "./logger.js";
 
+/**
+ * The `LanguageRegistry` allows `vscode-shiki-bridge` to collect all the language information from the installed (including built-in) extensions and expose an interface to build the Shiki compatible `LanguageRegistration` objects.
+ */
 export class LanguageRegistry {
   /**
    * Map of `languageId` to its aliases.
@@ -34,7 +37,7 @@ export class LanguageRegistry {
 
   registerLanguageContribution(language: ExtensionLanguage, uri: Uri) {
     if (!language.id) {
-      logger.debug(`tried to register a language contribution without id: ${uri.toString(true)}`, language, uri);
+      logger.trace(`tried to register a language contribution without id: ${uri.toString(true)}`, language, uri);
       return;
     }
     let aliases = this.aliases.get(language.id);
@@ -95,7 +98,7 @@ export class LanguageRegistry {
     }
     scopes.push(grammar);
     if (scopes.length > 1) {
-      logger.debug(`orphan scope '${grammar.scopeName}' has multiple (${scopes.length}) grammars`);
+      logger.trace(`orphan scope '${grammar.scopeName}' has multiple (${scopes.length}) grammars`);
     }
     this.uris.set(grammar, uri);
   }
@@ -116,6 +119,9 @@ export class LanguageRegistry {
     return [...this.aliases.get(languageId) ?? []];
   }
 
+  /**
+   * A static method to help building a `LanguageRegistry` from a collection of `Extension` objects
+   */
   static build(extensions: readonly Extension<unknown>[]): LanguageRegistry {
     const registry = new LanguageRegistry();
     for (const extension of extensions) {
@@ -137,7 +143,7 @@ export class LanguageRegistry {
           if (hasLanguage(grammar)) {
             registry.registerGrammarContribution(grammar, extension.extensionUri);
           } else {
-            logger.debug(`extension '${manifest.name}' has no language set for grammar with scope: '${grammar.scopeName}'`);
+            logger.trace(`extension '${manifest.name}' has no language set for grammar with scope: '${grammar.scopeName}'`);
             registry.registerOrphanScopeContribution(grammar, extension.extensionUri);
           }
         }

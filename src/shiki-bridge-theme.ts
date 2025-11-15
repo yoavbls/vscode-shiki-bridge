@@ -10,7 +10,7 @@ export async function buildThemeRegistration(contribution: ExtensionTheme, regis
     const id = contribution.id ?? contribution.label;
 
     if (!id) {
-        logger.debug(`cannot build a theme registration for a contribution without a label or id`, contribution);
+        logger.trace(`cannot build a theme registration for a contribution without a label or id`, contribution);
         return {};
     }
 
@@ -18,7 +18,7 @@ export async function buildThemeRegistration(contribution: ExtensionTheme, regis
     const rawTheme = await resolveThemeGrammar(contribution, registry, fileReader, Uri);
 
     if (typeof rawTheme.tokenColors === 'string') {
-        logger.debug(`theme '${id}' has 'tokenColors' set to a relative file path`, contribution, rawTheme);
+        logger.trace(`theme '${id}' has 'tokenColors' set to a relative file path`, contribution, rawTheme);
     }
 
     const themeRegistration: ThemeRegistration = {
@@ -52,7 +52,7 @@ export async function resolveThemeGrammar(contribution: ExtensionTheme, registry
     lastUri = currentUri;
     rawTheme = mergeRawTheme(include, rawTheme) as typeof rawTheme;
     if (typeof rawTheme.tokenColors === 'string') {
-      logger.debug(`theme '${id}' with include '${rawTheme.include}' has 'tokenColors' set to a relative file path`, contribution, rawTheme);
+      logger.trace(`theme '${id}' with include '${rawTheme.include}' has 'tokenColors' set to a relative file path`, contribution, rawTheme);
     }
     hasInclude = typeof rawTheme.include === 'string';
   }
