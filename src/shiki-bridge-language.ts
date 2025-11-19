@@ -67,23 +67,16 @@ export class LanguageRegistrationCollectionBuilder {
   }
 
   /**
-   * Fetch the `grammar.tmLanguage[.json]` files for the given `grammars` contributions
+   * Fetch the `grammar.tmLanguage[.json] | grammar.tmTheme` files for the given `grammars` contributions
    * These can be in the following formats:
-   * - cson
    * - plist
-   * - json
-   * - yaml
+   * - json[c]
    */
   async getGrammarFiles(grammars: ExtensionGrammar[]): Promise<Map<ExtensionGrammar, IRawGrammar>> {
     const entries = await Promise.all(grammars.map(async grammar => {
       const base = this.registry.getUri(grammar);
-      const grammarFile = await this.fileReader.readFile(base, grammar.path);
-      // `.tmLanguage` can be an XML file
-      if (grammarFile.startsWith("<?xml") || grammarFile.startsWith("<?XML")) {
-        return [grammar, { scopeName: grammar.scopeName, patterns: [], repository: {}} as IRawGrammar] as const;
-      }
-      const json = parse(grammarFile) as IRawGrammar;
-      return [grammar, json] as const;
+      const rawGrammar = await this.fileReader.readTmLanguage<IRawGrammar>(base, grammar.path);
+      return [grammar, rawGrammar] as const;
     }));
     return new Map(entries);
   }
