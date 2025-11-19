@@ -13,7 +13,7 @@ export function getVscode(): typeof import("vscode") {
   }
 }
 
-export function parseJsonc(jsonc: string) {
+function parseJsonc(jsonc: string) {
   const errors: ParseError[] = [];
   const result = jsoncParse(jsonc, errors, {
     allowEmptyContent: true,
