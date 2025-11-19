@@ -1,4 +1,3 @@
-import type { LanguageRegistration } from "shiki";
 import { LanguageRegistrationCollectionBuilder, type LanguageRegistrationExtended } from "./shiki-bridge-language.js";
 import { ExtensionFileReader, getVscode } from "./vscode-utils.js";
 import { LanguageRegistry } from "./language-registry.js";
@@ -7,7 +6,7 @@ interface UserLangsResult {
   /**
    * The language registrations to pass to Shiki's highlighter.
    */
-  langs: LanguageRegistration[],
+  langs: LanguageRegistrationExtended[],
   /**
    * Get the language registration for the given language id.
    * Will resolve language id if it is an alias.
@@ -22,7 +21,7 @@ interface UserLangsResult {
    * //    ^? LanguageRegistration { name: 'typescriptreact', ... }
    * ```
    */
-  get(languageId: string): LanguageRegistration | undefined,
+  get(languageId: string): LanguageRegistrationExtended | undefined,
   /**
    * A helper function to resolve a possible alias to its language id.
    * The language registrations always use the resolved alias as its `name` property.
