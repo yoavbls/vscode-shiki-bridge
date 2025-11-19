@@ -13,12 +13,12 @@ export class ThemeRegistry {
   registerThemeContribution(theme: ExtensionTheme, uri: Uri) {
     const id = theme.id ?? theme.label;
     if (!id) {
-      logger.trace(`tried to register a theme contribution without id: ${uri.toString(true)}`, theme, uri);
+      logger.debug(`tried to register a theme contribution without id: ${uri.toString(true)}`, theme, uri);
       return;
     }
     const cacheHit = this.themes.get(id);
     if (cacheHit) {
-        logger.trace(`tried to register a duplicate theme contribution: ${theme.id}`, theme, uri);
+        logger.debug(`tried to register a duplicate theme contribution: ${theme.id}`, theme, uri);
         return;
     }
 
@@ -31,7 +31,7 @@ export class ThemeRegistry {
       labels.add(theme.label);
     }
     if (labels.size > 1) {
-      logger.trace(`theme '${id}' has multiple labels: ${[...labels.values()].join(', ')}`, theme, labels);
+      logger.debug(`theme '${id}' has multiple labels: ${[...labels.values()].join(', ')}`, theme, labels);
     }
 
     this.themes.set(id, theme);

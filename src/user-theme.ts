@@ -27,7 +27,7 @@ export async function getUserTheme(): Promise<UserThemeResult> {
   const themeName = workbenchConfig.get<string>("colorTheme");
 
   if (!themeName) {
-    logger.trace('no theme name found under workbench.colorTheme');
+    logger.debug('no theme name found under workbench.colorTheme');
     return THEME_NOT_FOUND_RESULT;
   }
 
@@ -48,7 +48,7 @@ export async function getTheme(themeName: string): Promise<UserThemeResult> {
   const themeId = registry.resolveLabelToId(themeName);
   const contribution = registry.themes.get(themeId);
   if (!contribution) {
-    logger.trace(`no theme contribution found for theme id ${themeId}`);
+    logger.debug(`no theme contribution found for theme id ${themeId}`);
     return THEME_NOT_FOUND_RESULT;
   }
 

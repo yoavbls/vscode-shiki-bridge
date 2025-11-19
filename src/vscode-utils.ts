@@ -1,8 +1,6 @@
 import type { Uri } from "vscode";
 import type { ParseError } from 'jsonc-parser';
-import CSON from 'cson';
 import { parse as parsePlist } from 'fast-plist';
-import YAML from 'js-yaml';
 import { parse as jsoncParse } from 'jsonc-parser';
 
 export function getVscode(): typeof import("vscode") {
@@ -56,22 +54,11 @@ export class ExtensionFileReader {
   async readTmLanguage<T>(base: Uri, path?: string): Promise<T> {
     const uri = path ? this.vscode.Uri.joinPath(base, path) : base;
     let raw = await this.readFile(uri);
-    if (uri.path.endsWith('.cson')) {
-      return CSON.parse(raw);
-    } else if (uri.path.endsWith('.json')) {
+    if (uri.path.endsWith('.json')) {
       return parseJsonc(raw);
-    } else if (uri.path.endsWith('.plist')) {
+    } else if (uri.path.endsWith('.tmTheme') || uri.path.endsWith('.tmLanguage')) {
       return parsePlist(raw);
-    } else if (uri.path.endsWith('.yml') || uri.path.endsWith('.yaml')) {
-      return YAML.load(raw) as T;
-    } else {
-      raw = raw.trimStart();
-      if (raw[0] === '{')
-        return parseJsonc(raw);
-      else if (raw[0] === '<')
-        return parsePlist(raw);
-      else
-        return YAML.load(raw) as T;
     }
+    throw new TypeError(`expected ${path} to end with '.json', '.tmLanguage' or '.tmTheme'`);
   }
 }

@@ -37,7 +37,7 @@ export class LanguageRegistry {
 
   registerLanguageContribution(language: ExtensionLanguage, uri: Uri) {
     if (!language.id) {
-      logger.trace(`tried to register a language contribution without id: ${uri.toString(true)}`, language, uri);
+      logger.debug(`tried to register a language contribution without id: ${uri.toString(true)}`, language, uri);
       return;
     }
     let aliases = this.aliases.get(language.id);
@@ -98,7 +98,7 @@ export class LanguageRegistry {
     }
     scopes.push(grammar);
     if (scopes.length > 1) {
-      logger.trace(`orphan scope '${grammar.scopeName}' has multiple (${scopes.length}) grammars`);
+      logger.debug(`orphan scope '${grammar.scopeName}' has multiple (${scopes.length}) grammars`);
     }
     this.uris.set(grammar, uri);
   }
@@ -143,7 +143,7 @@ export class LanguageRegistry {
           if (hasLanguage(grammar)) {
             registry.registerGrammarContribution(grammar, extension.extensionUri);
           } else {
-            logger.trace(`extension '${manifest.name}' has no language set for grammar with scope: '${grammar.scopeName}'`);
+            logger.debug(`extension '${manifest.name}' has no language set for grammar with scope: '${grammar.scopeName}'`);
             registry.registerOrphanScopeContribution(grammar, extension.extensionUri);
           }
         }

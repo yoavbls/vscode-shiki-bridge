@@ -23,7 +23,7 @@ const createOutputLog = () => {
     const vscode = getVscode();
     const output = vscode.window.createOutputChannel('vscode-shiki-bridge', { log: true });
     return {
-        trace(message: any) { output.trace(message.toString()); },
+        trace(message: any) { output.debug(message.toString()); },
         debug(message: any) { output.debug(message.toString()); },
         log(message: any) { output.info(message.toString()); },
         info(message: any) { output.info(message.toString()); },

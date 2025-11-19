@@ -119,33 +119,33 @@ export class LanguageRegistrationCollectionBuilder {
       // These could be defined in an `embeddedLanguage` property from a different language
       // and thus required to be resolved to a language registration or else Shiki will throw when trying to highlight a language that has this id as part of its `embeddedLang`.
       if (languages.length === 0 && grammars.length === 0) {
-        logger.trace(`language ${languageId} has no language or grammar contributions`);
+        logger.debug(`language ${languageId} has no language or grammar contributions`);
         const aliased = registry.resolveAliasToLanguageId(languageId);
         if (aliased !== languageId) {
-          logger.trace(` but is an alias for ${aliased}`);
+          logger.debug(` but is an alias for ${aliased}`);
         }
         languageIdsWithoutContributions.push(languageId);
         continue;
       }
 
       if (languages.length === 0 && grammars.length > 0) {
-        logger.trace(`language ${languageId} has grammars (${grammars.length}) but no language contribution`, grammars);
+        logger.debug(`language ${languageId} has grammars (${grammars.length}) but no language contribution`, grammars);
       }
 
       if (languages.length > 0 && grammars.length === 0) {
-        logger.trace(`language ${languageId} has languages (${languages.length}) but no grammar contribution`, languages);
+        logger.debug(`language ${languageId} has languages (${languages.length}) but no grammar contribution`, languages);
       }
 
       if (languages.length > 1) {
-        logger.trace(`language ${languageId} has multiple language contributions (${languages.length})`, languages);
+        logger.debug(`language ${languageId} has multiple language contributions (${languages.length})`, languages);
         const firstLines = languages.map(lang => lang.firstLine).filter((firstLine): firstLine is string => !!firstLine);
         if (firstLines.length > 1 && firstLines.slice(1).some(other => other !== firstLines[0])) {
-          logger.trace(`language ${languageId} has conflicting firstLines: ${firstLines}`, firstLines);
+          logger.debug(`language ${languageId} has conflicting firstLines: ${firstLines}`, firstLines);
         }
       }
 
       if (grammars.length > 1) {
-        logger.trace(`language ${languageId} has multiple grammars contributions (${grammars.length})`, grammars);
+        logger.debug(`language ${languageId} has multiple grammars contributions (${grammars.length})`, grammars);
       }
 
       const language = mergeLanguageContributions(languageId, languages);
@@ -156,7 +156,7 @@ export class LanguageRegistrationCollectionBuilder {
       // Testing shows that some languages have multiple configuration files
       // ['html', 'jade', 'markdown', 'rust']
       if (languageConfigurations.size > 1) {
-        logger.trace(`language ${languageId} has multiple language configuration files (${languageConfigurations.size})`, languageConfigurations);
+        logger.debug(`language ${languageId} has multiple language configuration files (${languageConfigurations.size})`, languageConfigurations);
       }
 
       const languageConfiguration = mergeLanguageConfigurations(languageConfigurations);
@@ -164,13 +164,13 @@ export class LanguageRegistrationCollectionBuilder {
       // Testing shows that some languages have multiple grammar files
       // ['cpp', 'php']
       if (rawGrammars.size > 1) {
-        logger.trace(`language ${languageId} has multiple grammar files (${rawGrammars.size})`, rawGrammars);
+        logger.debug(`language ${languageId} has multiple grammar files (${rawGrammars.size})`, rawGrammars);
       }
 
       // since `grammar` and `rawGrammar` should be scoped with `scopeName`, this should create language registrations without conflicts
       for (const [grammar, rawGrammar] of rawGrammars.entries()) {
         if (grammar.scopeName !== rawGrammar.scopeName) {
-          logger.trace(`language ${languageId} has scope mismatch in grammar contribution and grammar file: ${grammar.scopeName} !== ${rawGrammar.scopeName}`, grammar, rawGrammar);
+          logger.debug(`language ${languageId} has scope mismatch in grammar contribution and grammar file: ${grammar.scopeName} !== ${rawGrammar.scopeName}`, grammar, rawGrammar);
         }
 
         const languageRegistration = buildLanguageRegistration({
@@ -226,10 +226,10 @@ export class LanguageRegistrationCollectionBuilder {
     languageIdsWithoutContributions.forEach(languageId => {
       const resolvedLanguageId = registry.resolveAliasToLanguageId(languageId);
       const isAlias = resolvedLanguageId !== languageId;
-      logger.trace(`language id without contribution: ${languageId}, ${isAlias ? `but is an alias: ${resolvedLanguageId}` : 'has no alias!'}`);
+      logger.debug(`language id without contribution: ${languageId}, ${isAlias ? `but is an alias: ${resolvedLanguageId}` : 'has no alias!'}`);
       const isEmbeddedIn = results.filter(lang => lang.embeddedLangs?.includes(languageId) || lang.embeddedLangsLazy?.includes(languageId));
       if (isEmbeddedIn.length) {
-        logger.trace(`  ${languageId} is embedded in the following languages: ${isEmbeddedIn.map(l => l.name).join(', ')}`);
+        logger.debug(`  ${languageId} is embedded in the following languages: ${isEmbeddedIn.map(l => l.name).join(', ')}`);
       }
     });
 
