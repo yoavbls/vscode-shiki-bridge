@@ -6,7 +6,6 @@ import type { ExtensionGrammer as ExtensionGrammar, ExtensionLanguage } from "vs
 import type { LanguageRegistry } from "./language-registry.js";
 import type { ExtensionFileReader } from "./vscode-utils.js";
 import { logger } from './logger.js';
-import { parse } from "jsonc-parser";
 
 /**
  * The {@link LanguageConfiguration} type from vscode is incomplete, so we augment it with our own addition.

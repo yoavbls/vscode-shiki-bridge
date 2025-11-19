@@ -2,7 +2,7 @@ import type { HighlighterCore } from "shiki";
 import { createHighlighterCore } from "shiki/core";
 import { createOnigurumaEngine } from 'shiki/engine/oniguruma';
 import * as vscode from "vscode";
-import { getUserLangs, getUserTheme } from "vscode-shiki-bridge";
+import { getLanguages, getUserTheme } from "vscode-shiki-bridge";
 
 let highlighter: ReturnType<typeof createHighlighterCore> | null = null;
 
@@ -24,10 +24,10 @@ export async function showShikiPreview() {
     title: 'loading preview...'
   }, async (progress) => {
     // Resolve current VS Code theme JSON (may be `THEME_NOT_FOUND_RESULT` if unavailable)
-    const [theme, themeRegistration] = await getUserTheme();
-    const result = await getUserLangs();
+    const [theme, themes] = await getUserTheme();
+    const result = await getLanguages();
 
-    console.log({ themeRegistration, result });
+    console.log({ themes, result });
 
     // NOTE: it is recommended to cache this instance and dynammically load themes and languages
     // see: https://shiki.style/guide/bundles#fine-grained-bundle
@@ -36,8 +36,8 @@ export async function showShikiPreview() {
     // dynamically load themes that are not loaded yet
     let loadedThemes = highlighter.getLoadedThemes();
     if (!loadedThemes.includes(theme)) {
-      console.log(`loading theme: `, themeRegistration);
-      await highlighter.loadTheme(themeRegistration);
+      console.log(`loading themes: `, themes);
+      await highlighter.loadTheme(...themes);
     }
 
     // dynamically load languages that are not loaded yet
@@ -189,7 +189,7 @@ function renderPreviewHtml(highlighted: Highlighted[]) {
   </html>`;
 }
 
-type UserLangsResult = Awaited<ReturnType<typeof getUserLangs>>;
+type UserLangsResult = Awaited<ReturnType<typeof getLanguages>>;
 
 /**
  * read all the `example.*` files in the current workspace

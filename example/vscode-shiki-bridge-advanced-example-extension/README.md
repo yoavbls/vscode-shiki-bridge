@@ -1,6 +1,6 @@
-# vscode-shiki-bridge-example-extension README
+# vscode-shiki-bridge-advanced-example-extension
 
-This is an advanced example extension to showcase the usage of [`vscode-shiki-bridge`](../../).
+This is an advanced example extension to showcase the usage of [`vscode-shiki-bridge`](../../) and to use for developing the library.
 
 This example showcases:
 - using `shiki/core` to create a highlighter without bundled grammars or themse

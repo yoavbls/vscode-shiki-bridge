@@ -2,7 +2,8 @@ import { LanguageRegistrationCollectionBuilder, type LanguageRegistrationExtende
 import { ExtensionFileReader, getVscode } from "./vscode-utils.js";
 import { LanguageRegistry } from "./language-registry.js";
 
-interface UserLangsResult {
+// TODO: instead of returning this as part of the result, provide these as an API that the caller can call, would make this simpler and tree-shakable
+interface LanguagesResult {
   /**
    * The language registrations to pass to Shiki's highlighter.
    */
@@ -60,12 +61,7 @@ function getLanguageRegistry(vscode: typeof import('vscode')): LanguageRegistry 
   return cache;
 }
 
-
-/**
- * Collect TextMate grammars contributed by installed VS Code extensions to use with Shiki's highlighter.
- * @param languageIds If provided, only loads grammars for those specific language IDs.
- */
-export async function getUserLangs(languageIds?: string[]): Promise<UserLangsResult> {
+export async function getLanguages(languageIds?: string[]): Promise<LanguagesResult> {
   const vscode = getVscode();
   const registry = getLanguageRegistry(vscode);
   const fileReader = new ExtensionFileReader(vscode);
@@ -109,5 +105,15 @@ export async function getUserLangs(languageIds?: string[]): Promise<UserLangsRes
       // default to `text` as this will never cause Shiki to throw when highlighting
       return 'text';
     }
-  } satisfies UserLangsResult;
+  } satisfies LanguagesResult;
+}
+
+
+/**
+ * Collect TextMate grammars contributed by installed VS Code extensions to use with Shiki's highlighter.
+ * @param languageIds If provided, only loads grammars for those specific language IDs.
+ */
+export async function getUserLangs(languageIds?: string[]): Promise<LanguageRegistrationExtended[]> {
+  const result = await getLanguages(languageIds);
+  return result.langs;
 }

@@ -4,7 +4,7 @@ import { getVscode, ExtensionFileReader } from "./vscode-utils.js";
 import { logger } from "./logger.js";
 import { buildThemeRegistration } from "./shiki-bridge-theme.js";
 
-export type UserThemeResult = [id: string, theme: ThemeRegistration] | [id: string, theme: SpecialTheme];
+export type UserThemeResult = [id: string, themes: [ThemeRegistration]] | [id: string, themes: [SpecialTheme]];
 
 let cache: ThemeRegistry | null = null;
 function getThemeRegistry(vscode: typeof import('vscode')): ThemeRegistry {
@@ -53,7 +53,7 @@ export async function getTheme(themeName: string): Promise<UserThemeResult> {
   }
 
   const themeRegistration = await buildThemeRegistration(contribution, registry, fileReader, vscode.Uri);
-  return [themeId, themeRegistration];
+  return [themeId, [themeRegistration]];
 }
 
-const THEME_NOT_FOUND_RESULT: [string, SpecialTheme] = ["none", "none"];
+const THEME_NOT_FOUND_RESULT: UserThemeResult = ["none", ["none"]];

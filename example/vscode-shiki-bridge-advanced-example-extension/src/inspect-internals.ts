@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
 import type { TextDocumentContentProvider } from "vscode";
-import { getUserLangs, getUserTheme } from "vscode-shiki-bridge";
+import { getUserLangs, getLanguages, getUserTheme } from "vscode-shiki-bridge";
 import { buildThemeRegistration, ExtensionFileReader, LanguageRegistry, ThemeRegistry } from 'vscode-shiki-bridge/internals';
 
 /**
@@ -118,8 +118,8 @@ export async function inspectInternals() {
 }
 
 async function inspectLanguageRegistration() {
-  const result = await getUserLangs();
-  const languageId = await vscode.window.showQuickPick(result.langs.map(lang => lang.name), {
+  const langs = await getUserLangs();
+  const languageId = await vscode.window.showQuickPick(langs.map(lang => lang.name), {
     ignoreFocusOut: true,
     placeHolder: 'Choose a Language ID',
     title: "Inspect Language Registration",
@@ -133,7 +133,7 @@ async function inspectLanguageRegistration() {
 
 async function getLanguageRegistrationTextDocumentContent(path: string): Promise<string> {
   const languageId = path.replace('.json', '');
-  const result = await getUserLangs();
+  const result = await getLanguages();
   const language = result.get(languageId);
   if (!language) {
     return stringify({
@@ -156,7 +156,7 @@ async function getRegistryTextDocumentContent() {
 }
 
 async function inspectLanguageContributions() {
-  const result = await getUserLangs();
+  const result = await getLanguages();
   const languageId = await vscode.window.showQuickPick(result.langs.map(lang => lang.name), {
     ignoreFocusOut: true,
     placeHolder: 'Choose a Language ID',
@@ -186,7 +186,7 @@ async function getLanguageContributionsTextDocumentContent(path: string) {
 }
 
 async function inspectGrammarContributions() {
-  const result = await getUserLangs();
+  const result = await getLanguages();
   const languageId = await vscode.window.showQuickPick(result.langs.map(lang => lang.name), {
     ignoreFocusOut: true,
     placeHolder: 'Choose a Language ID',
