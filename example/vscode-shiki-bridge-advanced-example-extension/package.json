@@ -27,7 +27,6 @@
     ]
   },
   "dependencies": {
-    "jsonc-parser": "^3.3.1",
     "shiki": "^3.9.2",
     "vscode-shiki-bridge": "*"
   },
