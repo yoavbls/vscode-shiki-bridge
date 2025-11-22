@@ -428,10 +428,9 @@ function bridgeLanguageContribution(contribution: ExtensionLanguage): Pick<Langu
   return {
     name,
     aliases,
-    // Take the first alias that starts with an uppercase ASCII
-    // eg. `aliases: ['Python', 'py']`, or `aliases: ['TypeScript', 'ts']`
-    // Testing shows that this will always resolve to the human readable name of the language
-    displayName: contribution.aliases?.find(alias => /^[A-Z]/.test(alias)),
+    // VS Code uses the first alias, and falls back on the language id
+    // see: https://github.com/microsoft/vscode/blob/60706b48bb96fe0fc4c43d7a710db7fb247d4d92/src/vs/editor/common/services/languagesRegistry.ts#L255-L261
+    displayName: contribution.aliases?.[0] || name,
     firstLineMatch: contribution.firstLine,
     extensions: contribution.extensions,
     filenamePatterns: contribution.filenamePatterns,
