@@ -18,7 +18,7 @@
 		},
 		{
 			"type": "npm",
-			"script": "watch:esbuild-advanced",
+			"script": "watch:esbuild",
 			"path": "example/vscode-shiki-bridge-advanced-example-extension",
 			"group": "build",
 			"problemMatcher": ["$esbuild-watch"],

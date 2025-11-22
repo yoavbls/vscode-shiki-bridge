@@ -1,5 +1,5 @@
 {
-  "name": "vscode-shiki-bridge-example-extension",
+  "name": "vscode-shiki-bridge-advanced-example-extension",
   "publisher": "vscode-shiki-bridge",
   "displayName": "extension-example",
   "description": "Use vscode-shiki-bridge package in web view panel",

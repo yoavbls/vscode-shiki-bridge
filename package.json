@@ -6,7 +6,7 @@
   "license": "MIT",
   "homepage": "https://github.com/yoavbls/vscode-shiki-bridge#readme",
   "workspaces": [
-    "example/vscode-shiki-bridge-example-extension"
+    "example/*"
   ],
   "bugs": {
     "url": "https://github.com/yoavbls/vscode-shiki-bridge/issues"

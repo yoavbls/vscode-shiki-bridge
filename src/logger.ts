@@ -15,7 +15,7 @@ const noopLogger: Logger = {
 
 const isRunningExampleExtension = () => {
     const vscode = getVscode();
-    const extension = vscode.extensions.getExtension('vscode-shiki-bridge.vscode-shiki-bridge-example-extension');
+    const extension = vscode.extensions.getExtension('vscode-shiki-bridge.vscode-shiki-bridge-example-extension') ?? vscode.extensions.getExtension('vscode-shiki-bridge.vscode-shiki-bridge-advanced-example-extension');
     return !!extension;
 };
 

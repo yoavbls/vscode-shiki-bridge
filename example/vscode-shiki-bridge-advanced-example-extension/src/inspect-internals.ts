@@ -11,7 +11,7 @@ function replacer(key: string, value: unknown) {
     return [...value.entries()].reduce((record, [key, value]) => {
       if (typeof key === 'object' && key !== null) {
         // detect ExtensionLanguage, ExtensionGrammar or ExtensionTheme contributions as key
-        if ((typeof key['id'] === 'string') || typeof key['scopeName'] === 'string' && typeof key['path'] === 'string') {
+        if ((typeof key['id'] === 'string') || (typeof key['label'] === 'string') || (typeof key['scopeName'] === 'string' && typeof key['path'] === 'string')) {
           if (value instanceof vscode.Uri) {
             const extension = value.path.slice(value.path.lastIndexOf('/') + 1);
             key = extension;
