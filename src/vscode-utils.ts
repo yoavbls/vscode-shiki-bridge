@@ -38,27 +38,28 @@ export class ExtensionFileReader {
     return text;
   }
 
-  async readJson<T>(base: Uri, path: string): Promise<T> {
+  async readJson<T>(base: Uri, path?: string): Promise<T> {
     const text = await this.readFile(base, path);
     const json = parseJsonc(text);
     return json as T;
   }
 
+  async readPlist<T>(base: Uri, path?: string): Promise<T> {
+    const text = await this.readFile(base, path);
+    const plist = parsePlist(text);
+    return plist as T;
+  }
+
   /**
-   * TextMate grammar/language files can be written in JSON, CSON, YAML or XML Plist formats.
-   *
-   * If the extension does not make it clear, we probe the first character to attempt to parse it correctly.
-   *
-   * based on https://github.com/shikijs/textmate-grammars-themes/blob/main/scripts/shared/parse.ts
+   * TextMate grammar/language files can be written in JSON (with comments) or XML PList formats.
+   * If the path ends with `.json[c]`, it will be parsed as JSON, else it will be assumed to be a PList
    */
   async readTmLanguage<T>(base: Uri, path?: string): Promise<T> {
-    const uri = path ? this.vscode.Uri.joinPath(base, path) : base;
-    let raw = await this.readFile(uri);
-    if (uri.path.endsWith('.json')) {
-      return parseJsonc(raw);
-    } else if (uri.path.endsWith('.tmTheme') || uri.path.endsWith('.tmLanguage')) {
-      return parsePlist(raw);
+    const pathWithExtension = path ?? base.path;
+    if (pathWithExtension.endsWith('.json') || pathWithExtension.endsWith('.jsonc')) {
+      return this.readJson(base, path);
+    } else {
+      return this.readPlist(base, path);
     }
-    throw new TypeError(`expected ${path} to end with '.json', '.tmLanguage' or '.tmTheme'`);
   }
 }
