@@ -9,7 +9,7 @@ export type UserThemeResult = [id: string, themes: [ThemeRegistration]] | [id: s
 let cache: ThemeRegistry | null = null;
 function getThemeRegistry(vscode: typeof import('vscode')): ThemeRegistry {
   if (!cache) {
-    cache = ThemeRegistry.build(vscode.extensions.all);
+    cache = new ThemeRegistry(vscode.extensions.all);
     const disposable = vscode.extensions.onDidChange(() => {
       cache = null;
       disposable.dispose();

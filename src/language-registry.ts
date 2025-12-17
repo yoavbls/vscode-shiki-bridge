@@ -119,11 +119,7 @@ export class LanguageRegistry {
     return [...this.aliases.get(languageId) ?? []];
   }
 
-  /**
-   * A static method to help building a `LanguageRegistry` from a collection of `Extension` objects
-   */
-  static build(extensions: readonly Extension<unknown>[]): LanguageRegistry {
-    const registry = new LanguageRegistry();
+  constructor(extensions: readonly Extension<unknown>[]) {
     for (const extension of extensions) {
       const manifest = extension.packageJSON as ExtensionManifest;
       const contributes = manifest.contributes;
@@ -134,23 +130,21 @@ export class LanguageRegistry {
 
       if (contributes.languages) {
         for (const lang of contributes.languages) {
-          registry.registerLanguageContribution(lang, extension.extensionUri);
+          this.registerLanguageContribution(lang, extension.extensionUri);
         }
       }
 
       if (contributes.grammars) {
         for (const grammar of contributes.grammars) {
           if (hasLanguage(grammar)) {
-            registry.registerGrammarContribution(grammar, extension.extensionUri);
+            this.registerGrammarContribution(grammar, extension.extensionUri);
           } else {
             logger.debug(`extension '${manifest.name}' has no language set for grammar with scope: '${grammar.scopeName}'`);
-            registry.registerOrphanScopeContribution(grammar, extension.extensionUri);
+            this.registerOrphanScopeContribution(grammar, extension.extensionUri);
           }
         }
       }
     }
-
-    return registry;
   }
 }
 

@@ -90,18 +90,17 @@ export class LanguageRegistrationCollectionBuilder {
    *   - for each grammar (grammars are always scoped), build a language registration merge the contributions and the grammar
    * - find any embedded languages, and recursively add those to the result
    */
-  static async build(languageIds: string[], registry: LanguageRegistry, fileReader: ExtensionFileReader): Promise<LanguageRegistrationExtended[]> {
+  async build(languageIds: string[]): Promise<LanguageRegistrationExtended[]> {
     // make a copy of the array, so we don't modify the original
     languageIds = [...languageIds];
-    const builder = new LanguageRegistrationCollectionBuilder(registry, fileReader);
     const results: LanguageRegistration[] = [];
 
     const languageIdsWithoutContributions: string[] = [];
 
     // the loop might add additional entries to `languageIds` in case of embedded languages
     for (const languageId of languageIds) {
-      const languages = registry.getLanguageContributions(languageId);
-      const grammars = registry.getGrammarContributions(languageId);
+      const languages = this.registry.getLanguageContributions(languageId);
+      const grammars = this.registry.getGrammarContributions(languageId);
 
       // Testing shows some languages have no language and grammar contributions
       // ['smarty', 'vs_net', 'dosbatch', 'coffee', 'objc', 'perl6', 'scala', 'plaintext', 'sass', 'stylus', 'postcss', 'json5']
@@ -112,7 +111,7 @@ export class LanguageRegistrationCollectionBuilder {
       // and thus required to be resolved to a language registration or else Shiki will throw when trying to highlight a language that has this id as part of its `embeddedLang`.
       if (languages.length === 0 && grammars.length === 0) {
         logger.debug(`language ${languageId} has no language or grammar contributions`);
-        const aliased = registry.resolveAliasToLanguageId(languageId);
+        const aliased = this.registry.resolveAliasToLanguageId(languageId);
         if (aliased !== languageId) {
           logger.debug(` but is an alias for ${aliased}`);
         }
@@ -142,8 +141,8 @@ export class LanguageRegistrationCollectionBuilder {
 
       const language = mergeLanguageContributions(languageId, languages);
 
-      const languageConfigurations = await builder.getLanguageConfigurationFiles(languages);
-      const rawGrammars = await builder.getGrammarFiles(grammars);
+      const languageConfigurations = await this.getLanguageConfigurationFiles(languages);
+      const rawGrammars = await this.getGrammarFiles(grammars);
 
       // Testing shows that some languages have multiple configuration files
       // ['html', 'jade', 'markdown', 'rust']
@@ -194,10 +193,10 @@ export class LanguageRegistrationCollectionBuilder {
       return scopeNames;
     }, new Set<string>());
     for (const scopeName of scopeNames) {
-      const grammars = registry.getScopeContributions(scopeName);
+      const grammars = this.registry.getScopeContributions(scopeName);
       for (const grammar of grammars) {
-        const uri = registry.getUri(grammar);
-        const rawGrammar = await fileReader.readTmLanguage<IRawGrammar>(uri, grammar.path);
+        const uri = this.registry.getUri(grammar);
+        const rawGrammar = await this.fileReader.readTmLanguage<IRawGrammar>(uri, grammar.path);
         const languageRegistration = buildLanguageRegistration({
           grammar,
           language: {
@@ -216,7 +215,7 @@ export class LanguageRegistrationCollectionBuilder {
     //         - if not, remove them from `embeddedLangs`
     //         - or create empty language registrations for these "null" languages
     languageIdsWithoutContributions.forEach(languageId => {
-      const resolvedLanguageId = registry.resolveAliasToLanguageId(languageId);
+      const resolvedLanguageId = this.registry.resolveAliasToLanguageId(languageId);
       const isAlias = resolvedLanguageId !== languageId;
       logger.debug(`language id without contribution: ${languageId}, ${isAlias ? `but is an alias: ${resolvedLanguageId}` : 'has no alias!'}`);
       const isEmbeddedIn = results.filter(lang => lang.embeddedLangs?.includes(languageId) || lang.embeddedLangsLazy?.includes(languageId));

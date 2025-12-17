@@ -58,13 +58,7 @@ export class ThemeRegistry {
     return [...this.labels.get(themeId) ?? []];
   }
 
-  /**
-   * A static method to help building a `    const registry = new ThemeRegistry();
-` from a collection of `Extension` objects
-   */
-  static build(extensions: readonly Extension<unknown>[]): ThemeRegistry {
-    const registry = new ThemeRegistry();
-
+  constructor(extensions: readonly Extension<unknown>[]) {
     for (const extension of extensions) {
       const manifest = extension.packageJSON as ExtensionManifest;
       const contributes = manifest.contributes;
@@ -78,10 +72,8 @@ export class ThemeRegistry {
       }
 
       for (const theme of contributes.themes) {
-        registry.registerThemeContribution(theme, extension.extensionUri);
+        this.registerThemeContribution(theme, extension.extensionUri);
       }
     }
-
-    return registry;
   }
 }

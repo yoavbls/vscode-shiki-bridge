@@ -52,7 +52,7 @@ interface LanguagesResult {
 let cache: LanguageRegistry | null = null;
 function getLanguageRegistry(vscode: typeof import('vscode')): LanguageRegistry {
   if (!cache) {
-    cache = LanguageRegistry.build(vscode.extensions.all);
+    cache = new LanguageRegistry(vscode.extensions.all);
     const disposable = vscode.extensions.onDidChange(() => {
       cache = null;
       disposable.dispose();
@@ -78,7 +78,8 @@ export async function getLanguages(languageIds?: string[]): Promise<LanguagesRes
       .filter(langId => registeredLanguageIds.includes(langId));
   }
 
-  const languages = await LanguageRegistrationCollectionBuilder.build(languageIds, registry, fileReader);
+  const builder = new LanguageRegistrationCollectionBuilder(registry, fileReader);
+  const languages = await builder.build(languageIds);
 
   return {
     langs: languages,
