@@ -1,4 +1,4 @@
-import { LanguageRegistrationCollectionBuilder, type LanguageRegistrationExtended } from "./shiki-bridge-language.js";
+import { LanguageRegistrationCollectionBuilder, type LanguageRegistrationExtended } from "./language-registration-collection-builder.js";
 import { ExtensionFileReader, getVscode } from "./vscode-utils.js";
 import { LanguageRegistry } from "./language-registry.js";
 

@@ -45,7 +45,7 @@ type ThemeMergeResult = Pick<ThemeRegistrationRawWithInclude, 'colors' | 'includ
  * `tokenColors` can be a string pointing to a PList file containing a `RawTheme`
  * see: https://github.com/microsoft/vscode/blob/60706b48bb96fe0fc4c43d7a710db7fb247d4d92/src/vs/workbench/services/themes/common/colorThemeData.ts#L749
  */
-export async function resolveThemeGrammar(contribution: ExtensionTheme, registry: ThemeRegistry, fileReader: ExtensionFileReader, Uri: typeof import('vscode').Uri) {
+async function resolveThemeGrammar(contribution: ExtensionTheme, registry: ThemeRegistry, fileReader: ExtensionFileReader, Uri: typeof import('vscode').Uri) {
   const id = contribution.id ?? contribution.label;
   const uri = registry.getUri(contribution);
   const contributionUri = Uri.joinPath(uri, contribution.path);

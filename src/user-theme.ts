@@ -2,7 +2,7 @@ import type { SpecialTheme, ThemeRegistration } from "shiki";
 import { ThemeRegistry } from "./theme-registry.js";
 import { getVscode, ExtensionFileReader } from "./vscode-utils.js";
 import { logger } from "./logger.js";
-import { buildThemeRegistration } from "./shiki-bridge-theme.js";
+import { buildThemeRegistration } from "./theme-registration-builder.js";
 
 export type UserThemeResult = [id: string, themes: [ThemeRegistration]] | [id: string, themes: [SpecialTheme]];
 
