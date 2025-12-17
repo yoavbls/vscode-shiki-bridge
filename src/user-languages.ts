@@ -1,6 +1,7 @@
-import { LanguageRegistrationCollectionBuilder, type LanguageRegistrationExtended } from "./language-registration-collection-builder.js";
+import { LanguageRegistrationCollectionBuilder } from "./language-registration-collection-builder.js";
 import { ExtensionFileReader, getVscode } from "./vscode-utils.js";
 import { LanguageRegistry } from "./language-registry.js";
+import type { LanguageRegistrationExtended } from "./language-registration-types.js";
 
 // TODO: instead of returning this as part of the result, provide these as an API that the caller can call, would make this simpler and tree-shakable
 interface LanguagesResult {
