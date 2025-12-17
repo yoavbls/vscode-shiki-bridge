@@ -3,7 +3,6 @@ import { ExtensionFileReader, getVscode } from "./vscode-utils.js";
 import { LanguageRegistry } from "./language-registry.js";
 import type { LanguageRegistrationExtended } from "./language-registration-types.js";
 
-// TODO: instead of returning this as part of the result, provide these as an API that the caller can call, would make this simpler and tree-shakable
 interface LanguagesResult {
   /**
    * The language registrations to pass to Shiki's highlighter.
@@ -63,24 +62,7 @@ function getLanguageRegistry(vscode: typeof import('vscode')): LanguageRegistry 
 }
 
 export async function getLanguages(languageIds?: string[]): Promise<LanguagesResult> {
-  const vscode = getVscode();
-  const registry = getLanguageRegistry(vscode);
-  const fileReader = new ExtensionFileReader(vscode);
-
-  const registeredLanguageIds = registry.getLanguageIds();
-  // if no language ids are given, fall back to all the language ids vscode extensions have registered
-  if (!languageIds) {
-    languageIds = registeredLanguageIds;
-  } else {
-    languageIds = languageIds.map(langId => registry
-      // resolve any aliases
-      .resolveAliasToLanguageId(langId))
-      // only do work for the languages actually registered by extensions
-      .filter(langId => registeredLanguageIds.includes(langId));
-  }
-
-  const builder = new LanguageRegistrationCollectionBuilder(registry, fileReader);
-  const languages = await builder.build(languageIds);
+  const languages = await getUserLangs(languageIds);
 
   return {
     langs: languages,
@@ -116,6 +98,24 @@ export async function getLanguages(languageIds?: string[]): Promise<LanguagesRes
  * @param languageIds If provided, only loads grammars for those specific language IDs.
  */
 export async function getUserLangs(languageIds?: string[]): Promise<LanguageRegistrationExtended[]> {
-  const result = await getLanguages(languageIds);
-  return result.langs;
+  const vscode = getVscode();
+  const registry = getLanguageRegistry(vscode);
+  const fileReader = new ExtensionFileReader(vscode);
+
+  const registeredLanguageIds = registry.getLanguageIds();
+  // if no language ids are given, fall back to all the language ids vscode extensions have registered
+  if (!languageIds) {
+    languageIds = registeredLanguageIds;
+  } else {
+    languageIds = languageIds.map(langId => registry
+      // resolve any aliases
+      .resolveAliasToLanguageId(langId))
+      // only do work for the languages actually registered by extensions
+      .filter(langId => registeredLanguageIds.includes(langId));
+  }
+
+  const builder = new LanguageRegistrationCollectionBuilder(registry, fileReader);
+  const languages = await builder.build(languageIds);
+
+  return languages;
 }
