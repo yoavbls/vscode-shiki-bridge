@@ -115,10 +115,6 @@ export class LanguageRegistry {
     return this.uris.get(contribution)!;
   }
 
-  getAliases(languageId: string): string[] {
-    return [...this.aliases.get(languageId) ?? []];
-  }
-
   constructor(extensions: readonly Extension<unknown>[]) {
     for (const extension of extensions) {
       const manifest = extension.packageJSON as ExtensionManifest;
