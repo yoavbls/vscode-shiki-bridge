@@ -1,71 +1,59 @@
-import { parse } from "jsonc-parser";
-import { getVscode } from "./vscode-utils.js";
-import type { SpecialTheme, ThemeRegistrationAny } from "shiki/types";
+import type { SpecialTheme, ThemeRegistration } from "shiki";
+import { ThemeRegistry } from "./theme-registry.js";
+import { getVscode, ExtensionFileReader } from "./vscode-utils.js";
+import { logger } from "./logger.js";
+import { buildThemeRegistration } from "./theme-registration-builder.js";
 
-/**
- * Read the currently selected user theme's theme JSON.
- * Returns null when not running inside VS Code, no theme is configured,
- * or the theme file cannot be found/read.
- */
-export async function getUserTheme(): Promise<
-  [string, ThemeRegistrationAny[]]
-> {
-  try {
-    const vscode = getVscode();
-    const workbenchConfig = vscode.workspace.getConfiguration("workbench");
-    const themeName = workbenchConfig.get<string>("colorTheme");
+export type UserThemeResult = [id: string, themes: [ThemeRegistration]] | [id: string, themes: [SpecialTheme]];
 
-    if (!themeName) {
-      return THEME_NOT_FOUND_RESULT;
-    }
-
-    const decoder = new TextDecoder("utf-8");
-
-    for (const extension of vscode.extensions.all) {
-      // `packageJSON` is `any` in VS Code's types; narrow the specific shape we need
-      const contributions = (extension.packageJSON?.contributes?.themes ??
-        []) as {
-        id?: string;
-        label?: string;
-        path: string;
-      }[];
-
-      const matchedTheme = contributions.find(
-        (contribution) =>
-          contribution.path &&
-          (contribution.id === themeName || contribution.label === themeName)
-      );
-
-      if (!matchedTheme) {
-        continue;
-      }
-
-      try {
-        const themeUri = vscode.Uri.joinPath(
-          extension.extensionUri,
-          matchedTheme.path
-        );
-        const rawBytes = await vscode.workspace.fs.readFile(themeUri);
-        const jsonText = decoder.decode(rawBytes);
-        const json = parse(jsonText) as ThemeRegistrationAny;
-        if (json.name) {
-          return [json.name, [json]];
-        }
-        return THEME_NOT_FOUND_RESULT;
-      } catch {
-        // If reading this theme fails, try the next extension (if any)
-        continue;
-      }
-    }
-
-    return THEME_NOT_FOUND_RESULT;
-  } catch {
-    // If the VS Code API is unavailable or any unexpected error occurs
-    return THEME_NOT_FOUND_RESULT;
+let cache: ThemeRegistry | null = null;
+function getThemeRegistry(vscode: typeof import('vscode')): ThemeRegistry {
+  if (!cache) {
+    cache = new ThemeRegistry(vscode.extensions.all);
+    const disposable = vscode.extensions.onDidChange(() => {
+      cache = null;
+      disposable.dispose();
+    });
   }
+  return cache;
 }
 
-const THEME_NOT_FOUND_RESULT: [SpecialTheme, ThemeRegistrationAny[]] = [
-  "none",
-  [],
-];
+/**
+ * Get the `ThemeRegistration` for the currently active theme.
+ */
+export async function getUserTheme(): Promise<UserThemeResult> {
+  const vscode = getVscode();
+  const workbenchConfig = vscode.workspace.getConfiguration("workbench");
+  const themeName = workbenchConfig.get<string>("colorTheme");
+
+  if (!themeName) {
+    logger.debug('no theme name found under workbench.colorTheme');
+    return THEME_NOT_FOUND_RESULT;
+  }
+
+  return await getTheme(themeName);
+}
+
+/**
+ * Get the `ThemeRegistration` for the given `themeName`.
+ *
+ * The `themeName` can be a theme's `label` or `id`, themes might define only one of these properties, `vscode-shiki-bridge` accepts both and will resolve it to the correct theme.
+ * @param themeName
+ */
+export async function getTheme(themeName: string): Promise<UserThemeResult> {
+  const vscode = getVscode();
+  const registry = getThemeRegistry(vscode);
+  const fileReader = new ExtensionFileReader(vscode);
+
+  const themeId = registry.resolveLabelToId(themeName);
+  const contribution = registry.themes.get(themeId);
+  if (!contribution) {
+    logger.debug(`no theme contribution found for theme id ${themeId}`);
+    return THEME_NOT_FOUND_RESULT;
+  }
+
+  const themeRegistration = await buildThemeRegistration(contribution, registry, fileReader, vscode.Uri);
+  return [themeId, [themeRegistration]];
+}
+
+const THEME_NOT_FOUND_RESULT: UserThemeResult = ["none", ["none"]];

@@ -4,25 +4,11 @@
 	"version": "2.0.0",
 	"tasks": [
 		{
-			"label": "watch",
-			"dependsOn": [
-				"npm: watch:tsc",
-				"npm: watch:esbuild"
-			],
-			"presentation": {
-				"reveal": "never"
-			},
-			"group": {
-				"kind": "build",
-				"isDefault": true
-			}
-		},
-		{
 			"type": "npm",
 			"script": "watch:esbuild",
 			"path": "example/vscode-shiki-bridge-example-extension",
 			"group": "build",
-			"problemMatcher": [],
+			"problemMatcher": ["$esbuild-watch"],
 			"isBackground": true,
 			"label": "npm: watch:esbuild",
 			"presentation": {
@@ -32,44 +18,16 @@
 		},
 		{
 			"type": "npm",
-			"script": "compile",
-			"path": "example/vscode-shiki-bridge-example-extension",
+			"script": "watch:esbuild",
+			"path": "example/vscode-shiki-bridge-advanced-example-extension",
 			"group": "build",
-			"label": "npm: compile",
-			"problemMatcher": []
-		},
-		{
-			"type": "npm",
-			"script": "watch:tsc",
-			"path": "example/vscode-shiki-bridge-example-extension",
-			"group": "build",
-			"problemMatcher": "$tsc-watch",
+			"problemMatcher": ["$esbuild-watch"],
 			"isBackground": true,
-			"label": "npm: watch:tsc",
+			"label": "npm: watch:esbuild-advanced",
 			"presentation": {
 				"group": "watch",
 				"reveal": "never"
 			}
-		},
-		{
-			"type": "npm",
-			"script": "watch-tests",
-			"path": "example/vscode-shiki-bridge-example-extension",
-			"problemMatcher": "$tsc-watch",
-			"isBackground": true,
-			"presentation": {
-				"reveal": "never",
-				"group": "watchers"
-			},
-			"group": "build"
-		},
-		{
-			"label": "tasks: watch-tests",
-			"dependsOn": [
-				"npm: watch",
-				"npm: watch-tests"
-			],
-			"problemMatcher": []
 		}
 	]
 }

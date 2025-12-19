@@ -1,0 +1,26 @@
+@{
+    var totalMessage = "";
+    if (IsPost)
+    {
+        var num1 = Request["text1"];
+        var num2 = Request["text2"];
+        var total = num1.AsInt() + num2.AsInt();
+        totalMessage = "Total = " + total;
+    }
+}
+<html>
+
+<body style="background-color: beige; font-family: Verdana, Arial;">
+    <form action="" method="post">
+        <p><label for="text1">First Number:</label><br>
+            <input type="text" name="text1" />
+        </p>
+        <p><label for="text2">Second Number:</label><br>
+            <input type="text" name="text2" />
+        </p>
+        <p><input type="submit" value=" Add " /></p>
+    </form>
+    <p>@totalMessage</p>
+</body>
+
+</html>

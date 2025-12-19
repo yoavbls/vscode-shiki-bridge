@@ -1,132 +1,121 @@
-import { parse } from "jsonc-parser";
-import type { IRawGrammar } from "shiki/textmate";
-import type { LanguageRegistration } from "shiki/types";
-import { inferBuiltinLanguageIds } from "./user-language-inference.js";
-import { getVscode } from "./vscode-utils.js";
+import { LanguageRegistrationCollectionBuilder } from "./language-registration-collection-builder.js";
+import { ExtensionFileReader, getVscode } from "./vscode-utils.js";
+import { LanguageRegistry } from "./language-registry.js";
+import type { LanguageRegistrationExtended } from "./language-registration-types.js";
+
+interface LanguagesResult {
+  /**
+   * The language registrations to pass to Shiki's highlighter.
+   */
+  langs: LanguageRegistrationExtended[],
+  /**
+   * Get the language registration for the given language id.
+   * Will resolve language id if it is an alias.
+   *
+   * Returns `undefined` if there is no language registration for the given language id.
+   *
+   * @example
+   * ```ts
+   * const result = getUserLangs(['tsx']);
+   *
+   * const resolvedLanguageId = result.get('tsx');
+   * //    ^? LanguageRegistration { name: 'typescriptreact', ... }
+   * ```
+   */
+  get(languageId: string): LanguageRegistrationExtended | undefined,
+  /**
+   * A helper function to resolve a possible alias to its language id.
+   * The language registrations always use the resolved alias as its `name` property.
+   * All its aliases can be found under the `aliases` property.
+   *
+   * @example
+   * ```ts
+   * const result = getUserLangs(['tsx']);
+   *
+   * const resolvedLanguageId = result.resolveAlias('tsx');
+   * //    ^? 'typescriptreact'
+   * ```
+   */
+  resolveAlias(languageId: string): string;
+  /**
+   * A helper function to resolve an `.ext` extension to its language id.
+   * @example
+   * ```ts
+   * const result = getUserLangs(['handlebars']);
+   *
+   * const resolvedLanguageId = result.resolveExtension('.hbs');
+   * //    ^? 'handlebars'
+   */
+  resolveExtension(extension: string): string;
+}
+
+let cache: LanguageRegistry | null = null;
+function getLanguageRegistry(vscode: typeof import('vscode')): LanguageRegistry {
+  if (!cache) {
+    cache = new LanguageRegistry(vscode.extensions.all);
+    const disposable = vscode.extensions.onDidChange(() => {
+      cache = null;
+      disposable.dispose();
+    });
+  }
+  return cache;
+}
+
+export async function getLanguages(languageIds?: string[]): Promise<LanguagesResult> {
+  const languages = await getUserLangs(languageIds);
+
+  return {
+    langs: languages,
+    get(languageId: string): LanguageRegistrationExtended | undefined {
+      for (const language of languages) {
+        if (language.name === languageId) {
+          return language;
+        }
+        if (language.aliases?.includes(languageId)) {
+          return language;
+        }
+      }
+      return;
+    },
+    resolveAlias(languageId: string): string {
+      return this.get(languageId)?.name ?? languageId;
+    },
+    resolveExtension(extension: string): string {
+      for (const language of languages) {
+        if (language.extensions?.includes(extension)) {
+          return language.name;
+        }
+      }
+      // default to `text` as this will never cause Shiki to throw when highlighting
+      return 'text';
+    }
+  } satisfies LanguagesResult;
+}
+
 
 /**
- * Collect TextMate grammars contributed by installed VS Code extensions.
- * @param langIds - If provided, only loads grammars for those specific language IDs.
+ * Collect TextMate grammars contributed by installed VS Code extensions to use with Shiki's highlighter.
+ * @param languageIds If provided, only loads grammars for those specific language IDs.
  */
-export async function getUserLangs(langIds?: string[]) {
-  try {
-    const vscode = getVscode();
+export async function getUserLangs(languageIds?: string[]): Promise<LanguageRegistrationExtended[]> {
+  const vscode = getVscode();
+  const registry = getLanguageRegistry(vscode);
+  const fileReader = new ExtensionFileReader(vscode);
 
-    const decoder = new TextDecoder("utf-8");
-    const extensionLangs: LanguageRegistration[] = [];
-    const seenScope = new Set<string>();
-
-    // Normalize langIds to lowercase for comparison
-    const normalizedLangIds = langIds?.map((id) => id.toLowerCase());
-
-    for (const extension of vscode.extensions.all) {
-      const contributes = (extension.packageJSON?.contributes ?? {}) as {
-        languages?: { id: string; aliases?: string[] }[];
-        grammars?: {
-          language?: string;
-          scopeName?: string;
-          path?: string;
-          embeddedLanguages?: Record<string, string>;
-        }[];
-      };
-
-      if (!contributes.grammars || contributes.grammars.length === 0) {
-        continue;
-      }
-
-      // Build language ID to aliases map
-      const languageIdToAliases = new Map<string, string[]>();
-      for (const lang of contributes.languages ?? []) {
-        if (lang?.id) languageIdToAliases.set(lang.id, lang.aliases ?? []);
-      }
-
-      // If langIds specified, check if this extension has any matching grammars
-      if (normalizedLangIds) {
-        const hasMatchingGrammar = contributes.grammars.some((grammar) => {
-          if (!grammar?.language) return false;
-
-          const names = [
-            grammar.language,
-            ...(languageIdToAliases.get(grammar.language) ?? []),
-          ]
-            .filter(Boolean)
-            .map((name) => name.toLowerCase());
-
-          return normalizedLangIds.some((desiredName) =>
-            names.includes(desiredName)
-          );
-        });
-
-        // Skip this extension entirely if no matching grammars
-        if (!hasMatchingGrammar) {
-          continue;
-        }
-      }
-
-      for (const grammar of contributes.grammars) {
-        // We only handle JSON grammars to keep this dependency-light
-        if (!grammar?.path || !grammar.scopeName) continue;
-        if (!/\.json$/i.test(grammar.path)) continue;
-
-        // Prefer grammars that are tied to a language id
-        if (!grammar.language) continue;
-
-        // Skip if we've already seen this scope
-        if (seenScope.has(grammar.scopeName)) continue;
-
-        // If langIds specified, check if this grammar matches
-        if (normalizedLangIds) {
-          const names = [
-            grammar.language,
-            ...(languageIdToAliases.get(grammar.language) ?? []),
-          ]
-            .filter(Boolean)
-            .map((name) => name.toLowerCase());
-
-          const match = normalizedLangIds.find((desiredName) =>
-            names.includes(desiredName)
-          );
-          if (!match) {
-            continue;
-          }
-        }
-
-        try {
-          const uri = vscode.Uri.joinPath(extension.extensionUri, grammar.path);
-          const raw = await vscode.workspace.fs.readFile(uri);
-          const jsonText = decoder.decode(raw);
-          const grammarJson = parse(jsonText) as IRawGrammar;
-
-          const embeddedLangs = grammar.embeddedLanguages
-            ? Array.from(
-                new Set(
-                  Object.values(grammar.embeddedLanguages).filter(Boolean)
-                )
-              )
-            : undefined;
-
-          seenScope.add(grammar.scopeName);
-          extensionLangs.push({
-            ...grammarJson,
-            name: grammar.language,
-            embeddedLangs,
-            aliases: languageIdToAliases.get(grammar.language) ?? undefined,
-          });
-        } catch {
-          // Skip this grammar if reading/parsing fails
-          continue;
-        }
-      }
-    }
-
-    // If langIds specified, also include inferred built-in languages
-    if (normalizedLangIds) {
-      const builtinLangs = inferBuiltinLanguageIds(extensionLangs);
-      return [...extensionLangs, ...builtinLangs];
-    }
-
-    return extensionLangs;
-  } catch {
-    return [];
+  const registeredLanguageIds = registry.getLanguageIds();
+  // if no language ids are given, fall back to all the language ids vscode extensions have registered
+  if (!languageIds) {
+    languageIds = registeredLanguageIds;
+  } else {
+    languageIds = languageIds.map(langId => registry
+      // resolve any aliases
+      .resolveAliasToLanguageId(langId))
+      // only do work for the languages actually registered by extensions
+      .filter(langId => registeredLanguageIds.includes(langId));
   }
+
+  const builder = new LanguageRegistrationCollectionBuilder(registry, fileReader);
+  const languages = await builder.build(languageIds);
+
+  return languages;
 }

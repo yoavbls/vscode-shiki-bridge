@@ -21,7 +21,7 @@ export function activate(context: vscode.ExtensionContext) {
     async () => {
       // Resolve current VS Code theme JSON (may be null if unavailable)
       const [theme, themes] = await getUserTheme();
-      const langs = await getUserLangs(["graphql", "type"]);
+      const langs = await getUserLangs(["html", "javascript", "css"]);
 
       const highlighter = await createHighlighter({
         themes,
@@ -29,20 +29,56 @@ export function activate(context: vscode.ExtensionContext) {
       });
 
       const htmlSnippet = highlighter.codeToHtml(
-        `string | number | Partial<{ a: string }>[]`,
+        `
+    <h1>Mozilla is cool</h1>
+    <img src="images/firefox-icon.png" alt="The Firefox logo: a flaming fox surrounding the Earth.">
+
+    <p>At Mozilla, we're a global community of</p>
+
+    <ul> <!-- changed to list in the tutorial -->
+      <li>technologists</li>
+      <li>thinkers</li>
+      <li>builders</li>
+    </ul>
+
+    <p>working together to keep the Internet alive and accessible, so people worldwide can be informed contributors and creators of the Web.
+      We believe this act of human collaboration across an open platform is essential to individual growth and our collective future.</p>
+
+    <p>Read the <a href="https://www.mozilla.org/en-US/about/manifesto/">Mozilla Manifesto</a>
+      to learn even more about the values and principles that guide the pursuit of our mission.</p>`,
         {
-          lang: "type",
+          lang: "html",
           theme,
         }
       );
 
-      const gqlHtmlSnippet = highlighter.codeToHtml(
-        `type User {
-    name: String
-    age: Int
+      const cssSnippet = highlighter.codeToHtml(
+        `
+    div p {
+      margin: 0;
+      padding: 1em;
+    }
+
+    div p + p {
+      padding-top: 0;
+    }`,
+        {
+          lang: "css",
+          theme,
+        }
+      );
+
+      const javascriptSnippet = highlighter.codeToHtml(
+        `
+function checkEvenOdd(num) {
+    if (typeof num !== 'number') {
+        return 'Please enter a valid number.';
+    }
+
+    return num % 2 === 0 ? \`\${num} is an even number.\` : \`\${num} is an odd number.\`;
 }`,
         {
-          lang: "graphql",
+          lang: "javascript",
           theme,
         }
       );
@@ -61,7 +97,7 @@ export function activate(context: vscode.ExtensionContext) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Shiki Preview</title>
     <style>
-      body { 
+      body {
         font-family: system-ui, -apple-system, sans-serif;
         padding: 20px;
         margin: 0;
@@ -82,9 +118,8 @@ export function activate(context: vscode.ExtensionContext) {
   </head>
   <body>
       <div class="container">${htmlSnippet}</div>
-    ${
-      gqlHtmlSnippet ? `GQL:<div class="container">${gqlHtmlSnippet}</div>` : ""
-    }
+      <div class="container">${cssSnippet}</div>
+      <div class="container">${javascriptSnippet}</div>
   </body>
 </html>`;
     }

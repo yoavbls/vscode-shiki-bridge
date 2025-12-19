@@ -1,5 +1,5 @@
 {
-  "name": "vscode-shiki-bridge-example-extension",
+  "name": "vscode-shiki-bridge-advanced-example-extension",
   "publisher": "vscode-shiki-bridge",
   "displayName": "extension-example",
   "description": "Use vscode-shiki-bridge package in web view panel",
@@ -17,7 +17,12 @@
       {
         "command": "vscode-shiki-bridge-example-extension.shikiPreview",
         "title": "Shiki Preview",
-        "category": "VSCode Shiki bridge"
+        "category": "VS Code Shiki Bridge"
+      },
+      {
+        "command": "vscode-shiki-bridge-example-extension.inspectInternals",
+        "title": "Inspect Internals",
+        "category": "VS Code Shiki Bridge"
       }
     ]
   },

@@ -6,17 +6,62 @@
 	"version": "0.2.0",
 	"configurations": [
 		{
-			"name": "Run Extension",
+			"name": "Run Example",
 			"type": "extensionHost",
 			"request": "launch",
+			"preLaunchTask": "npm: watch:esbuild",
+			"cwd": "${workspaceFolder}/example/vscode-shiki-bridge-example-extension",
 			"args": [
-				"--extensionDevelopmentPath=${workspaceFolder}/example/vscode-shiki-bridge-example-extension"
+				"--extensionDevelopmentPath=${workspaceFolder}/example/vscode-shiki-bridge-example-extension",
+				"${workspaceFolder}/example/vscode-shiki-bridge-example-extension"
 			],
 			"outFiles": [
 				"${workspaceFolder}/example/vscode-shiki-bridge-example-extension/dist/**/*.cjs"
-			],
+			]
+		},
+		{
+			"name": "Run Example (all extensions disabled)",
+			"type": "extensionHost",
+			"request": "launch",
+			"preLaunchTask": "npm: watch:esbuild",
 			"cwd": "${workspaceFolder}/example/vscode-shiki-bridge-example-extension",
-			"preLaunchTask": "npm: compile"
+			"args": [
+                "--disable-extensions",
+				"--extensionDevelopmentPath=${workspaceFolder}/example/vscode-shiki-bridge-example-extension",
+				"${workspaceFolder}/example/vscode-shiki-bridge-example-extension"
+			],
+			"outFiles": [
+				"${workspaceFolder}/example/vscode-shiki-bridge-example-extension/dist/**/*.cjs"
+			]
+		},
+		{
+			"name": "Run Advanced Example",
+			"type": "extensionHost",
+			"request": "launch",
+			"preLaunchTask": "npm: watch:esbuild-advanced",
+			"cwd": "${workspaceFolder}/example/vscode-shiki-bridge-advanced-example-extension",
+			"args": [
+				"--extensionDevelopmentPath=${workspaceFolder}/example/vscode-shiki-bridge-advanced-example-extension",
+				"${workspaceFolder}/example/vscode-shiki-bridge-advanced-example-extension/examples"
+			],
+			"outFiles": [
+				"${workspaceFolder}/example/vscode-shiki-bridge-advanced-example-extension/dist/**/*.cjs"
+			]
+		},
+		{
+			"name": "Run Advanced Example (all extensions disabled)",
+			"type": "extensionHost",
+			"request": "launch",
+			"preLaunchTask": "npm: watch:esbuild-advanced",
+			"cwd": "${workspaceFolder}/example/vscode-shiki-bridge-advanced-example-extension",
+			"args": [
+                "--disable-extensions",
+				"--extensionDevelopmentPath=${workspaceFolder}/example/vscode-shiki-bridge-advanced-example-extension",
+				"${workspaceFolder}/example/vscode-shiki-bridge-advanced-example-extension/examples"
+			],
+			"outFiles": [
+				"${workspaceFolder}/example/vscode-shiki-bridge-advanced-example-extension/dist/**/*.cjs"
+			]
 		}
 	]
 }
