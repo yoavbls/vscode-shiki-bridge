@@ -45,8 +45,8 @@ function lazy<T>(getter: () => NonNullable<T>) {
 }
 
 const fileReader = new ExtensionFileReader(vscode);
-const getLanguageRegistry = lazy(() => LanguageRegistry.build(vscode.extensions.all));
-const getThemeRegistry = lazy(() => ThemeRegistry.build(vscode.extensions.all));
+const getLanguageRegistry = lazy(() => new LanguageRegistry(vscode.extensions.all));
+const getThemeRegistry = lazy(() => new ThemeRegistry(vscode.extensions.all));
 
 /**
  * Actions available when running Inspect Internals
