@@ -48,8 +48,6 @@ const html = highlighter.codeToHtml(
 
 A tuple containing a theme id, and an array containing the `ThemeRegistration`.
 
-If the theme cannot be found, [the special `"none"` theme](https://shiki.style/themes#special-themes) is returned.
-
 ```ts
 export type UserThemeResult = [id: string, themes: [ThemeRegistration]];
 ```
@@ -65,8 +63,6 @@ async function getUserTheme(): Promise<UserThemeResult>;
 #### `getTheme`
 
 Get a `UserThemeResult` for the given `themeName`. The `themeName` can be its `label` or `id`. VS Code themes will define at least on of these (usually the `label`), `vscode-shiki-bridge` will resolve it to the correct theme.
-
-If the theme cannot be found, [the special `"none"` theme](https://shiki.style/themes#special-themes) is returned.
 
 ```ts
 async function getTheme(themeName: string): Promise<UserThemeResult>;
