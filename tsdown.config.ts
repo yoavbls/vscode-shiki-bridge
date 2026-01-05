@@ -4,14 +4,14 @@ export default defineConfig([
   // ESM build with types
   {
     entry: ["./src/index.ts"],
-    platform: "neutral",
+    platform: "node",
     dts: true,
     format: "esm",
   },
   // ESM build for internals with types
   {
     entry: ["./src/internals.ts"],
-    platform: "neutral",
+    platform: "node",
     dts: true,
     format: "esm",
   },
