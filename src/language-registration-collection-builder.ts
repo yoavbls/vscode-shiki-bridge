@@ -1,7 +1,7 @@
 import type { LanguageRegistration } from "shiki";
 import type { IRawGrammar } from "shiki/textmate";
 import type { LanguageConfiguration } from "vscode";
-import type { ExtensionGrammer as ExtensionGrammar, ExtensionLanguage } from "vscode-extension-manifest";
+import type { ExtensionGrammar, ExtensionLanguage } from "./manifest.js";
 
 import type { LanguageRegistry } from "./language-registry.js";
 import type { ExtensionFileReader } from "./vscode-utils.js";

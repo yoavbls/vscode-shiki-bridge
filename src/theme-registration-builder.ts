@@ -1,5 +1,5 @@
 import type { ThemeRegistration, ThemeRegistrationRaw, RawTheme } from "shiki";
-import type { ExtensionTheme } from "vscode-extension-manifest";
+import type { ExtensionTheme } from "./manifest.js";
 import type { ThemeRegistry } from "./theme-registry.js";
 import { type ExtensionFileReader } from "./vscode-utils.js";
 import { logger } from "./logger.js";

@@ -1,4 +1,4 @@
-import type { ExtensionGrammer as ExtensionGrammar, ExtensionLanguage, ExtensionManifest } from "vscode-extension-manifest";
+import type { ExtensionGrammar, ExtensionLanguage, ExtensionManifest } from "./manifest.js";
 import type { Extension, Uri } from "vscode";
 import { logger } from "./logger.js";
 
