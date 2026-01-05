@@ -1,5 +1,5 @@
 import type { Extension, Uri } from "vscode";
-import type { ExtensionManifest, ExtensionTheme } from "vscode-extension-manifest";
+import type { ExtensionManifest, ExtensionTheme } from "./manifest.js";
 import { logger } from "./logger.js";
 
 /**

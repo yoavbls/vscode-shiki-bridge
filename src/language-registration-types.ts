@@ -1,5 +1,5 @@
 import type { LanguageConfiguration } from "vscode";
-import type { ExtensionLanguage } from "vscode-extension-manifest";
+import type { ExtensionLanguage } from "./manifest.js";
 import type { LanguageRegistration } from "shiki";
 
 /**
