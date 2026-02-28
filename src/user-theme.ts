@@ -1,10 +1,10 @@
-import type { SpecialTheme, ThemeRegistration } from "shiki";
+import type { ThemeRegistration } from "shiki";
 import { ThemeRegistry } from "./theme-registry.js";
 import { getVscode, ExtensionFileReader } from "./vscode-utils.js";
 import { logger } from "./logger.js";
 import { buildThemeRegistration } from "./theme-registration-builder.js";
 
-export type UserThemeResult = [id: string, themes: [ThemeRegistration]] | [id: string, themes: [SpecialTheme]];
+export type UserThemeResult = [id: string, themes: [ThemeRegistration]];
 
 let cache: ThemeRegistry | null = null;
 function getThemeRegistry(vscode: typeof import('vscode')): ThemeRegistry {
@@ -24,13 +24,7 @@ function getThemeRegistry(vscode: typeof import('vscode')): ThemeRegistry {
 export async function getUserTheme(): Promise<UserThemeResult> {
   const vscode = getVscode();
   const workbenchConfig = vscode.workspace.getConfiguration("workbench");
-  const themeName = workbenchConfig.get<string>("colorTheme");
-
-  if (!themeName) {
-    logger.debug('no theme name found under workbench.colorTheme');
-    return THEME_NOT_FOUND_RESULT;
-  }
-
+  const themeName = workbenchConfig.get<string>("colorTheme")!;
   return await getTheme(themeName);
 }
 
@@ -48,12 +42,11 @@ export async function getTheme(themeName: string): Promise<UserThemeResult> {
   const themeId = registry.resolveLabelToId(themeName);
   const contribution = registry.themes.get(themeId);
   if (!contribution) {
-    logger.debug(`no theme contribution found for theme id ${themeId}`);
-    return THEME_NOT_FOUND_RESULT;
+    const message = `no theme contribution found for theme id ${themeId}`;
+    logger.debug(message);
+    throw new Error(message);
   }
 
   const themeRegistration = await buildThemeRegistration(contribution, registry, fileReader, vscode.Uri);
   return [themeId, [themeRegistration]];
 }
-
-const THEME_NOT_FOUND_RESULT: UserThemeResult = ["none", ["none"]];
