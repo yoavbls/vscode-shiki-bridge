@@ -1,6 +1,6 @@
 {
   "name": "vscode-shiki-bridge",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "Embed Shiki code blocks in VS Code, inheriting the user's themes and languages",
   "type": "module",
   "license": "MIT",
@@ -24,11 +24,13 @@
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
+      "types": "./dist/index.d.ts",
       "development": "./src/index.ts",
       "require": "./dist/index.cjs",
       "import": "./dist/index.js"
     },
     "./internals": {
+      "types": "./dist/internals.d.ts",
       "development": "./src/internals.ts",
       "import": "./dist/internals.js"
     },
