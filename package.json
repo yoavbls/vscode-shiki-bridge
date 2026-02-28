@@ -19,17 +19,18 @@
   "files": [
     "dist"
   ],
-  "main": "./dist/index.js",
+  "main": "./dist/index.cjs",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "development": "./src/index.ts",
-      "default": "./dist/index.js"
+      "require": "./dist/index.cjs",
+      "import": "./dist/index.js"
     },
     "./internals": {
       "development": "./src/internals.ts",
-      "default": "./dist/internals.js"
+      "import": "./dist/internals.js"
     },
     "./package.json": "./package.json"
   },
