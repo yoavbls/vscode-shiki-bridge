@@ -21,7 +21,7 @@ export async function buildThemeRegistration(contribution: ExtensionTheme, regis
         /**
          * NOTE: note that we use `settings` instead of `tokenColors` when building the final theme registration, as this is what Shiki expects
          */
-        settings: rawTheme.tokenColors,
+        settings: rawTheme.tokenColors ?? rawTheme.settings,
         colors: rawTheme.colors,
         semanticHighlighting: rawTheme.semanticHighlighting,
         semanticTokenColors: rawTheme.semanticTokenColors,
