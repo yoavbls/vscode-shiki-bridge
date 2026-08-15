@@ -1,3 +1,5 @@
+
+
 # `vscode-shiki-bridge`
 
 🌉 Extracts the user's VS Code theme and language grammars for Shiki
@@ -62,7 +64,7 @@ async function getUserTheme(): Promise<UserThemeResult>;
 
 #### `getTheme`
 
-Get a `UserThemeResult` for the given `themeName`. The `themeName` can be its `label` or `id`. VS Code themes will define at least on of these (usually the `label`), `vscode-shiki-bridge` will resolve it to the correct theme.
+Get a `UserThemeResult` for the given `themeName`. The `themeName` can be its `label` or `id`. VS Code themes will define at least one of these (usually the `label`), `vscode-shiki-bridge` will resolve it to the correct theme.
 
 ```ts
 async function getTheme(themeName: string): Promise<UserThemeResult>;
